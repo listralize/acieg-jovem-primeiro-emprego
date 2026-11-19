@@ -73,7 +73,7 @@ function viewHome(){
   var started=doneCount()>0;
   var w=h.welcome, lead=w[0], rest=w.slice(1,-1), ready=w[w.length-1];
   return '<section class="hero"><div class="hero__in"><div class="reveal">'+
-    '<div class="hero__top"><!-- ESPAÇO DA LOGO OFICIAL ACIEG JOVEM --><span class="logo-slot logo-slot--hero" role="img" aria-label="Espaço reservado para a logomarca oficial da ACIEG Jovem">Logo ACIEG Jovem</span></div>'+
+    '<div class="hero__top"><img src="img/logo-aciegjovem.png" alt="ACIEG Jovem" class="logo-img logo-img--hero" width="684" height="205"></div>'+
     '<h1>Meu Primeiro Emprego.<em>E Agora?</em></h1><p class="hero__sub">'+esc(h.subtitle)+'</p>'+
     '<div class="hero__cta"><a class="btn btn--sun" href="#/'+first.id+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost" href="#modulos" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
     '</div><div class="hero__art reveal">'+img('home','',true)+'</div></div></section>'+

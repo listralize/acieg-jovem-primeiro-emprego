@@ -27,11 +27,16 @@ h1,h2,h3{font-family:var(--display);color:var(--navy);line-height:1.12;letter-sp
 .wide{max-width:1080px;margin:0 auto;padding:0 20px}
 svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-/* logo slot */
-.logo-slot{display:inline-flex;align-items:center;justify-content:center;border:1.5px dashed rgba(23,71,209,.45);color:var(--blue-d);background:rgba(255,255,255,.7);border-radius:10px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-align:center;line-height:1.15}
-.logo-slot--sm{width:58px;height:38px;padding:3px}
-.logo-slot--hero{width:150px;height:64px;border-color:rgba(255,255,255,.6);color:#fff;background:rgba(255,255,255,.08);font-size:12px}
-.logo-slot--foot{width:120px;height:52px}
+/* logo oficial ACIEG Jovem (proporção 684×205) */
+.logo-img{display:block;width:auto;height:32px;aspect-ratio:684/205;object-fit:contain;flex:none}
+.logo-img--sm{height:28px}
+.logo-img--hero{height:44px;max-width:min(220px,72vw)}
+.logo-img--foot{height:40px;max-width:160px}
+@media(min-width:640px){
+  .logo-img--sm{height:32px}
+  .logo-img--hero{height:56px;max-width:260px}
+  .logo-img--foot{height:44px}
+}
 
 /* topbar */
 .topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
