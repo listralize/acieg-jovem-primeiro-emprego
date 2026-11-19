@@ -52,13 +52,16 @@ var SAY={
 
 /* ---------- estado local (só neste aparelho) ---------- */
 var S=load();
-function emptyState(){return {done:{},ans:{},checks:[],ex:[],plan:[],badges:{},sound:false,name:''}}
+function emptyState(){return {done:{},ans:{},checks:[],ex:[],plan:[],badges:{},sound:false,name:'',leadId:'',leadToken:'',leadSkipped:false}}
 function load(){
   var base=emptyState();
   try{Object.assign(base,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
   if(!base.badges) base.badges={};
   if(base.sound!==true) base.sound=false;
   if(typeof base.name!=='string') base.name='';
+  if(typeof base.leadId!=='string') base.leadId='';
+  if(typeof base.leadToken!=='string') base.leadToken='';
+  if(base.leadSkipped!==true) base.leadSkipped=false;
   MODS.forEach(function(m){if(base.done[m.id]&&!base.badges[m.id]) base.badges[m.id]=true});
   return base;
 }
@@ -102,6 +105,63 @@ function buddyHTML(mood,msg,cls){
 }
 
 /* ---------- views ---------- */
+function startHref(){
+  var first=(MODS.filter(function(m){return !S.done[m.id]})[0]||MODS[0]).id;
+  if(!S.leadToken && !S.leadSkipped && doneCount()===0) return '#/ola';
+  return '#/'+first;
+}
+function digits(s){return String(s||'').replace(/\D/g,'')}
+function maskWa(v){
+  var d=digits(v);
+  if(d.startsWith('55')) d=d.slice(2);
+  d=d.slice(0,11);
+  if(d.length===0) return '';
+  if(d.length<=2) return '('+d;
+  if(d.length<=6) return '('+d.slice(0,2)+') '+d.slice(2);
+  if(d.length<=10) return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);
+  return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);
+}
+function validWa(v){
+  var d=digits(v);
+  if(d.startsWith('00')) d=d.slice(2);
+  if(d.startsWith('55') && (d.length===12||d.length===13)) {}
+  else if(d.length===10||d.length===11) d='55'+d;
+  else return false;
+  if(d.length!==12 && d.length!==13) return false;
+  if(d.charAt(2)==='0') return false;
+  if(d.length===13 && d.charAt(4)!=='9') return false;
+  return true;
+}
+function progressPayload(){
+  return {token:S.leadToken,modules_done:MODS.filter(function(m){return S.done[m.id]}).map(function(m){return m.id}).concat(S.badges&&S.badges.bonus?['bonus']:[]),xp:xpTotal(),completed:doneCount()===7,name:S.name||''};
+}
+var syncTimer=null;
+function syncProgress(){
+  if(!S.leadId||!S.leadToken) return;
+  clearTimeout(syncTimer);
+  var body=JSON.stringify(progressPayload());
+  var go=function(){fetch('/api/primeiro-emprego/leads/'+S.leadId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:body,keepalive:true}).catch(function(){})};
+  syncTimer=setTimeout(go,400);
+}
+function viewOla(){
+  return '<section class="lead"><div class="lead__hero"><div class="wrap lead__in">'+buddyHTML('start','Bora se conhecer? É rápido e descontraído.')+
+    '<p class="kicker">Antes de começar</p><h1 tabindex="-1">Um oi pra <em>começar</em> a jornada</h1>'+
+    '<p class="lead__sub">Leva menos de 1 minuto. Assim a ACIEG Jovem acompanha você e pode entrar em contato.</p></div></div>'+
+    '<div class="wrap"><form class="lead__form" id="leadForm" novalidate>'+
+    '<label for="ln">Como você se chama?</label><input class="lin" id="ln" name="nome" type="text" autocomplete="name" maxlength="80" required placeholder="Seu nome">'+
+    '<label for="lw">WhatsApp</label><input class="lin" id="lw" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(62) 99999-9999">'+
+    '<div class="lead__row"><div><label for="li">Idade</label><input class="lin" id="li" name="idade" type="number" inputmode="numeric" min="14" max="40" required placeholder="16"></div>'+
+    '<div><label for="lemp">Empresa onde você começou</label><input class="lin" id="lemp" name="empresa" type="text" maxlength="120" required placeholder="Nome da empresa"></div></div>'+
+    '<details class="lead__more"><summary>E-mail e cidade <span>(opcional)</span></summary>'+
+    '<label for="lem">E-mail</label><input class="lin" id="lem" name="email" type="email" autocomplete="email" maxlength="120" placeholder="seu@email.com">'+
+    '<label for="lcid">Cidade</label><input class="lin" id="lcid" name="cidade" type="text" maxlength="80" placeholder="Goiânia"></details>'+
+    '<label class="lead__lgpd"><input type="checkbox" id="lcons" name="consent" required><span>Autorizo a ACIEG Jovem a usar esses dados para acompanhar minha jornada e entrar em contato.</span></label>'+
+    '<input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">'+
+    '<div class="lead__err" id="leadErr" role="alert"></div>'+
+    '<button type="submit" class="btn btn--sun btn--block" id="leadGo">Começar a jornada'+ICON.arrow+'</button>'+
+    '<button type="button" class="btn btn--ghost btn--block" data-lead-skip>Quero só explorar por agora</button>'+
+    '</form></div></section>';
+}
 function viewHome(){
   var h=C.home, first=MODS.filter(function(m){return !S.done[m.id]})[0]||MODS[0];
   var started=doneCount()>0;
@@ -111,11 +171,11 @@ function viewHome(){
     '<div class="hero__top"><img src="img/logo-aciegjovem.png" alt="ACIEG Jovem" class="logo-img logo-img--hero" width="684" height="205"></div>'+
     buddyHTML(mood, started?(doneCount()===7?'Você zerou o guia. Orgulho demais.':'Já são '+doneCount()+' de 7 missões. Bora continuar?'):pick(SAY.idle))+
     '<h1>Meu Primeiro Emprego.<em>E Agora?</em></h1><p class="hero__sub">'+esc(h.subtitle)+'</p>'+
-    '<div class="hero__cta"><a class="btn btn--sun" href="#/'+first.id+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost" href="#modulos" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
+    '<div class="hero__cta"><a class="btn btn--sun" href="'+startHref()+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost" href="#modulos" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
     '</div><div class="hero__art reveal">'+img('home','',true)+'</div></div></section>'+
     '<div class="wrap"><section class="welcome reveal" aria-labelledby="bv"><span class="kicker" style="color:var(--coral-d)">'+ICON.star+' '+esc(h.welcomeTitle)+'</span>'+
     '<h2 id="bv" class="welcome__lead" style="margin:10px 0 12px;font-size:26px">'+lead.html+'</h2>'+blocks(rest)+
-    '<div class="ready"><p>'+ready.html+'</p><a class="btn btn--blue" href="#/'+first.id+'">'+esc(h.cta)+ICON.arrow+'</a></div></section></div>'+
+    '<div class="ready"><p>'+ready.html+'</p><a class="btn btn--blue" href="'+startHref()+'">'+esc(h.cta)+ICON.arrow+'</a></div>'+(S.leadToken?'':'<p class="lead__chip"><a href="#/ola">Quer que a ACIEG Jovem acompanhe você? É só um oi rápido.</a></p>')+'</section></div>'+
     '<section class="section" id="modulos" aria-labelledby="aprender"><div class="wide"><h2 id="aprender">'+esc(h.learnTitle)+'</h2><div class="grid7">'+
     MODS.map(function(m,i){var d=S.done[m.id];var b=BADGES[m.id];return '<a class="mcard'+(d?' is-done':'')+' reveal" href="#/'+m.id+'">'+(d?'<span class="mcard__badge" title="'+esc(b.name)+'">'+b.emoji+'</span>':'')+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Módulo '+m.n+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
     '<a class="bonus-call reveal" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir módulo bônus'+ICON.arrow+'</span></a></div></div></section>';
@@ -175,7 +235,7 @@ function viewFinal(){
   var badges='<ul class="fin__badges" aria-label="Conquistas desbloqueadas">'+MODS.map(function(m){var b=BADGES[m.id], on=S.badges[m.id];return '<li'+(on?'':' style="opacity:.35"')+'><span class="badge-sticker badge-sticker--sm" aria-hidden="true">'+(on?b.emoji:'🔒')+'</span><span>'+esc(b.name)+'</span></li>'}).join('')+'</ul>';
   return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><p class="kicker fin__k">Você zerou o guia</p><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos · '+xpTotal()+' XP</span></div>'+
    '<h1 tabindex="-1">'+esc(f.title)+'</h1>'+badges+'<div class="fin__art">'+img('final','',true)+'</div>'+
-   '<div class="fin__cert"><div class="fin__cert-box"><label for="certName">Seu nome no certificado (opcional)</label><input id="certName" type="text" maxlength="40" autocomplete="nickname" placeholder="Ex.: Ana Souza" value="'+esc(S.name||'')+'" data-cert-name><button type="button" class="btn btn--sun" data-cert>'+ICON.down+'Baixar meu certificado</button><p>Imagem pra guardar ou compartilhar. Nada é enviado pra servidor.</p></div></div>'+
+   '<div class="fin__cert"><div class="fin__cert-box"><label for="certName">Seu nome no certificado (opcional)</label><input id="certName" type="text" maxlength="40" autocomplete="nickname" placeholder="Ex.: Ana Souza" value="'+esc(S.name||'')+'" data-cert-name><button type="button" class="btn btn--sun" data-cert>'+ICON.down+'Baixar meu certificado</button><p>Imagem pra guardar ou compartilhar. O certificado é gerado neste aparelho.</p></div></div>'+
    '<div style="padding:0 20px"><div class="fin__card">'+blocks(f.blocks)+'<div class="fin__btns">'+
    '<a class="btn btn--ghost" href="#modulos" data-revisit>'+ICON.map+esc(bt[0])+'</a>'+
    '<button type="button" class="btn btn--sun" data-download="plan" data-from-final>'+ICON.down+esc(bt[1])+'</button>'+
@@ -435,10 +495,11 @@ main.addEventListener('click',function(e){
   if((t=e.target.closest('[data-download]'))){
     if(t.hasAttribute('data-from-final')&&!hasPlan()){toast('Seu plano ainda está vazio. Preencha no Módulo 7.');location.hash='#/m7?plano';return}
     download();return}
+  if((t=e.target.closest('[data-lead-skip]'))){S.leadSkipped=true;save();location.hash='#/m1';return}
   if((t=e.target.closest('[data-complete]'))){
     var id=t.dataset.complete;
     var first=!S.done[id]||!S.badges[id];
-    S.done[id]=true;save();
+    S.done[id]=true;save();syncProgress();
     var go=function(){var i=MODS.findIndex(function(m){return m.id===id});location.hash=i<6?'#/'+MODS[i+1].id:'#/final'};
     if(first) unlockBadge(id,go);
     else go();
@@ -452,7 +513,39 @@ main.addEventListener('input',function(e){
   var t=e.target;
   if(t.dataset.ex!==undefined){S.ex[+t.dataset.ex]=t.value;save()}
   else if(t.dataset.plan!==undefined){S.plan[+t.dataset.plan]=t.value;save()}
-  else if(t.hasAttribute('data-cert-name')){S.name=t.value;save()}
+  else if(t.hasAttribute('data-cert-name')){S.name=t.value;save();syncProgress()}
+});
+main.addEventListener('input',function(e){if(e.target&&e.target.id==='lw'){var c=e.target.selectionStart,o=e.target.value,n=maskWa(o);e.target.value=n;}});
+main.addEventListener('submit',function(e){
+  var form=e.target.closest('#leadForm'); if(!form) return;
+  e.preventDefault();
+  var err=document.getElementById('leadErr'); err.textContent='';
+  var nome=document.getElementById('ln').value.trim();
+  var wa=document.getElementById('lw').value;
+  var idade=parseInt(document.getElementById('li').value,10);
+  var empresa=document.getElementById('lemp').value.trim();
+  var email=document.getElementById('lem').value.trim();
+  var cidade=document.getElementById('lcid').value.trim();
+  var consent=document.getElementById('lcons').checked;
+  var website=(form.querySelector('[name=website]')||{}).value||'';
+  var msg='';
+  if(nome.length<2) msg='Conta seu nome (pelo menos 2 letras).';
+  else if(!validWa(wa)) msg='WhatsApp brasileiro inválido. Use DDD + número.';
+  else if(!idade||idade<14||idade>40) msg='Idade entre 14 e 40 anos.';
+  else if(empresa.length<2) msg='Conta a empresa onde você começou.';
+  else if(email && !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(email)) msg='E-mail inválido.';
+  else if(!consent) msg='Marca a autorização pra gente te acompanhar.';
+  if(msg){err.textContent=msg;return}
+  var btn=document.getElementById('leadGo'); btn.disabled=true; btn.textContent='Salvando…';
+  fetch('/api/primeiro-emprego/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome,whatsapp:wa,idade:idade,empresa:empresa,email:email||undefined,cidade:cidade||undefined,consent:true,website:website})})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}})})
+    .then(function(res){
+      if(!res.j||!res.j.ok){throw new Error((res.j&&res.j.error)||'Não rolou agora. Tenta de novo.');}
+      if(res.j.token&&res.j.id){S.leadId=String(res.j.id);S.leadToken=res.j.token;S.name=nome;save();syncProgress();}
+      toast('Oba, '+nome.split(' ')[0]+'! Bora começar.');
+      location.hash='#/m1';
+    })
+    .catch(function(err2){err.textContent=err2.message||'Não rolou agora. Tenta de novo.';btn.disabled=false;btn.innerHTML='Começar a jornada'+ICON.arrow;});
 });
 
 /* ---------- revelar ao rolar + parallax leve ---------- */
@@ -493,18 +586,19 @@ function route(){
   var raw=location.hash.replace(/^#\/?/,''), parts=raw.split('?'), r=parts[0]||'home', anchor=parts[1];
   if(raw==='modulos'){r='home';anchor='modulos'}
   var m=MODS.filter(function(x){return x.id===r})[0];
-  var html=m?viewModule(m):r==='bonus'?viewBonus():r==='final'?viewFinal():viewHome();
+  var html=m?viewModule(m):r==='bonus'?viewBonus():r==='final'?viewFinal():r==='ola'?viewOla():viewHome();
   main.innerHTML=html;
   main.classList.remove('view-in');void main.offsetWidth;main.classList.add('view-in');
-  document.title=(m?'Módulo '+m.n+': '+m.short.name+' | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
+  document.title=(m?'Módulo '+m.n+': '+m.short.name+' | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':r==='ola'?'Um oi pra começar | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
   if(m){var k=S.ans[m.id];if(k)showAnswer(document.querySelector('[data-quiz]'),m.id,k,false);checklistState()}
   updateProgress();
   bindReveal();
   bindParallax();
   if(r==='bonus'&&!S.badges.bonus){
-    S.badges.bonus=true;save();updateProgress();
+    S.badges.bonus=true;save();updateProgress();syncProgress();
     toast('Conquista desbloqueada: Meus direitos · +50 XP');
   }
+  if(r==='final'&&doneCount()===7) syncProgress();
   if(anchor&&document.getElementById(anchor)){requestAnimationFrame(function(){document.getElementById(anchor).scrollIntoView()})}
   else{window.scrollTo(0,0);var h=main.querySelector('h1[tabindex]');if(h&&route.ready)h.focus({preventScroll:true})}
   route.ready=true;
