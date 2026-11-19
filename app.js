@@ -32,12 +32,40 @@ var ICON={
   shield:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>',
   map:'<svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>'
 };
+var BADGES={
+  m1:{emoji:'👋',name:'Primeiro passo',line:'Você chegou, se apresentou e já saiu na frente.',xp:100},
+  m2:{emoji:'⏰',name:'Responsa',line:'Pequenas atitudes, grandes resultados. Missão cumprida.',xp:100},
+  m3:{emoji:'💬',name:'Boa prosa',line:'Falar, ouvir e se posicionar com respeito é um superpoder.',xp:100},
+  m4:{emoji:'🤝',name:'No time',line:'Ninguém cresce sozinho. Você já entendeu o jogo em equipe.',xp:100},
+  m5:{emoji:'🌱',name:'Levanta e segue',line:'Errar faz parte. O que conta é o que você faz depois.',xp:100},
+  m6:{emoji:'⚡',name:'Mão na massa',line:'Iniciativa com responsabilidade: esse é o seu diferencial.',xp:100},
+  m7:{emoji:'🚀',name:'Olho no futuro',line:'O primeiro emprego é só o começo. E você já traçou o rumo.',xp:100},
+  bonus:{emoji:'🛡️',name:'Meus direitos',line:'Conhecer seus direitos também é parte da jornada.',xp:50}
+};
+var SAY={
+  idle:['Bora nessa?','Tô com você nessa jornada.','Um passo de cada vez.'],
+  start:['Primeira missão: vamos com calma e confiança.','Respira. Você consegue.'],
+  yay:['Isso! Mandou bem.','Acertou em cheio. 🔥','Boa, pode ter orgulho.'],
+  think:['Hmm, vamos pensar juntos.','Quase. Tenta de outro jeito.','Errou faz parte — olha a dica.'],
+  win:['Missão cumprida!','Selou mais uma conquista.','Você tá on fire.']
+};
 
 /* ---------- estado local (só neste aparelho) ---------- */
 var S=load();
-function load(){try{return Object.assign({done:{},ans:{},checks:[],ex:[],plan:[]},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return {done:{},ans:{},checks:[],ex:[],plan:[]}}}
+function emptyState(){return {done:{},ans:{},checks:[],ex:[],plan:[],badges:{},sound:false,name:''}}
+function load(){
+  var base=emptyState();
+  try{Object.assign(base,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
+  if(!base.badges) base.badges={};
+  if(base.sound!==true) base.sound=false;
+  if(typeof base.name!=='string') base.name='';
+  MODS.forEach(function(m){if(base.done[m.id]&&!base.badges[m.id]) base.badges[m.id]=true});
+  return base;
+}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function doneCount(){return MODS.filter(function(m){return S.done[m.id]}).length}
+function xpTotal(){var n=doneCount()*100;if(S.badges&&S.badges.bonus)n+=50;return n}
+function reduceMotion(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches}
 
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function img(k,cls,eager,small){var sz=small?'(min-width:980px) 340px, (min-width:620px) 50vw, 100vw':'(min-width:1080px) 1040px, 100vw';return '<img class="'+(cls||'')+'" src="img/'+k+'-640.webp" srcset="img/'+k+'-640.webp 640w, img/'+k+'.webp 1280w" sizes="'+sz+'" width="1280" height="720" alt="'+esc(ALT[k])+'"'+(eager?' fetchpriority="high"':' loading="lazy"')+' decoding="async">'}
@@ -67,13 +95,21 @@ function acc(items,prefix,kicker){
   }).join('')+'</div>';
 }
 
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function buddyHTML(mood,msg,cls){
+  var face={idle:'😊',start:'🙌',yay:'🔥',think:'🤔',win:'😎'}[mood]||'😊';
+  return '<div class="buddy'+(cls?' '+cls:'')+'" data-mood="'+mood+'"><span class="buddy__face" aria-hidden="true">'+face+'</span><p class="buddy__say">'+esc(msg||pick(SAY[mood]||SAY.idle))+'</p></div>';
+}
+
 /* ---------- views ---------- */
 function viewHome(){
   var h=C.home, first=MODS.filter(function(m){return !S.done[m.id]})[0]||MODS[0];
   var started=doneCount()>0;
   var w=h.welcome, lead=w[0], rest=w.slice(1,-1), ready=w[w.length-1];
-  return '<section class="hero"><div class="hero__in"><div class="reveal">'+
+  var mood=doneCount()===7?'win':(started?'yay':'idle');
+  return '<section class="hero"><div class="floaties" aria-hidden="true"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i><i class="f5"></i></div><div class="hero__in"><div class="reveal">'+
     '<div class="hero__top"><img src="img/logo-aciegjovem.png" alt="ACIEG Jovem" class="logo-img logo-img--hero" width="684" height="205"></div>'+
+    buddyHTML(mood, started?(doneCount()===7?'Você zerou o guia. Orgulho demais.':'Já são '+doneCount()+' de 7 missões. Bora continuar?'):pick(SAY.idle))+
     '<h1>Meu Primeiro Emprego.<em>E Agora?</em></h1><p class="hero__sub">'+esc(h.subtitle)+'</p>'+
     '<div class="hero__cta"><a class="btn btn--sun" href="#/'+first.id+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost" href="#modulos" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
     '</div><div class="hero__art reveal">'+img('home','',true)+'</div></div></section>'+
@@ -81,13 +117,13 @@ function viewHome(){
     '<h2 id="bv" class="welcome__lead" style="margin:10px 0 12px;font-size:26px">'+lead.html+'</h2>'+blocks(rest)+
     '<div class="ready"><p>'+ready.html+'</p><a class="btn btn--blue" href="#/'+first.id+'">'+esc(h.cta)+ICON.arrow+'</a></div></section></div>'+
     '<section class="section" id="modulos" aria-labelledby="aprender"><div class="wide"><h2 id="aprender">'+esc(h.learnTitle)+'</h2><div class="grid7">'+
-    MODS.map(function(m,i){var d=S.done[m.id];return '<a class="mcard'+(d?' is-done':'')+'" href="#/'+m.id+'">'+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Módulo '+m.n+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
-    '<a class="bonus-call" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir módulo bônus'+ICON.arrow+'</span></a></div></div></section>';
+    MODS.map(function(m,i){var d=S.done[m.id];var b=BADGES[m.id];return '<a class="mcard'+(d?' is-done':'')+' reveal" href="#/'+m.id+'">'+(d?'<span class="mcard__badge" title="'+esc(b.name)+'">'+b.emoji+'</span>':'')+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Módulo '+m.n+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
+    '<a class="bonus-call reveal" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir módulo bônus'+ICON.arrow+'</span></a></div></div></section>';
 }
 
 function activityHTML(m){
   var a=m.activity;
-  return '<section class="sim" aria-labelledby="sim-'+m.id+'"><span class="kicker">'+ICON.bulb+' Atividade interativa</span>'+
+  return '<section class="sim reveal" aria-labelledby="sim-'+m.id+'">'+buddyHTML('idle','Tô aqui pra essa situação. Lê com calma e escolhe.')+'<span class="kicker">'+ICON.bulb+' Atividade interativa</span>'+
    '<div class="sim__situ"><p style="font-weight:800;color:#fff;margin:10px 0 4px">Situação:</p>'+blocks(a.situation)+'</div>'+
    '<p class="sim__q" id="sim-'+m.id+'">'+a.question+'</p>'+
    '<div class="opts" role="group" aria-labelledby="sim-'+m.id+'" data-quiz="'+m.id+'">'+a.options.map(function(o){
@@ -97,25 +133,25 @@ function activityHTML(m){
 
 function viewModule(m){
   var i=MODS.indexOf(m), next=MODS[i+1], prev=MODS[i-1];
-  var h='<section class="mhero"><div class="mhero__in"><span class="kicker">Módulo '+m.n+' de 7 · '+esc(m.short.name)+'</span>'+
+  var h='<section class="mhero"><div class="mhero__in"><span class="mission">Missão <b>'+m.n+' / 7</b></span><span class="kicker">Módulo '+m.n+' de 7 · '+esc(m.short.name)+'</span>'+
     '<div class="steps-dots" aria-hidden="true">'+MODS.map(function(x){return '<a href="#/'+x.id+'" tabindex="-1" class="'+(S.done[x.id]?'is-done':'')+'"'+(x===m?' aria-current="step"':'')+'></a>'}).join('')+'</div>'+
-    '<h1 tabindex="-1">'+esc(m.title)+'</h1>'+img(m.id,'',true)+'</div></section><div class="wrap">'+
-    '<section class="opening" aria-label="Abertura">'+blocks(m.intro)+'</section>'+
+    '<h1 tabindex="-1">'+esc(m.title)+'</h1>'+buddyHTML(S.done[m.id]?'win':'start', S.done[m.id]?('Você já desbloqueou “'+BADGES[m.id].name+'”.'):pick(SAY.start))+img(m.id,'',true)+'</div></section><div class="wrap">'+
+    '<section class="opening reveal" aria-label="Abertura">'+blocks(m.intro)+'</section>'+
     '<h2 class="label-h">Conteúdo do módulo</h2><p class="hint">Toque em cada card para abrir.</p>'+acc(m.cards,m.id+'-card','Card')+
     '<h2 class="label-h">Na prática</h2>'+activityHTML(m);
   if(m.checklist){var c=m.checklist;
-    h+='<section class="panel" style="margin-top:18px" aria-labelledby="ck"><span class="kicker">'+esc(c.kicker)+'</span><h3 id="ck">'+esc(c.title)+'</h3><ul class="checks">'+
+    h+='<section class="panel reveal" style="margin-top:18px" aria-labelledby="ck"><span class="kicker">'+esc(c.kicker)+'</span><h3 id="ck">'+esc(c.title)+'</h3><ul class="checks">'+
      c.items.map(function(t,j){return '<li><label class="check"><input type="checkbox" data-check="'+j+'"'+(S.checks[j]?' checked':'')+'><span class="check__box" aria-hidden="true">'+ICON.check+'</span><span>'+esc(t)+'</span></label></li>'}).join('')+
      '</ul><p class="check-count" aria-live="polite"></p><div class="done-msg" role="status">'+ICON.star+'<span>'+esc(c.done)+'</span></div></section>';}
   if(m.exercise){var e=m.exercise;
-    h+='<section class="panel" style="margin-top:18px" aria-labelledby="ex"><span class="kicker">'+esc(e.kicker)+'</span><h3 id="ex">'+esc(e.title)+'</h3>'+
+    h+='<section class="panel reveal" style="margin-top:18px" aria-labelledby="ex"><span class="kicker">'+esc(e.kicker)+'</span><h3 id="ex">'+esc(e.title)+'</h3>'+
      e.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-ex="'+j+'" rows="2">'+esc(S.ex[j]||'')+'</textarea></label>'}).join('')+
      '<div class="row-btns"><button type="button" class="btn btn--blue" data-copy="ex">'+ICON.copy+'Copiar respostas</button></div><p class="saved">'+ICON.check+'Salvo automaticamente neste aparelho.</p></section>';}
   if(m.plan){var p=m.plan;
-    h+='<section class="panel" id="plano" style="margin-top:18px" aria-labelledby="pl"><span class="kicker">'+esc(p.kicker)+'</span><h3 id="pl">'+esc(p.title)+'</h3><p class="plan-lead">'+esc(p.lead)+'</p>'+
+    h+='<section class="panel reveal" id="plano" style="margin-top:18px" aria-labelledby="pl"><span class="kicker">'+esc(p.kicker)+'</span><h3 id="pl">'+esc(p.title)+'</h3><p class="plan-lead">'+esc(p.lead)+'</p>'+
      p.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-plan="'+j+'" rows="2">'+esc(S.plan[j]||'')+'</textarea></label>'}).join('')+
      '<div class="row-btns"><button type="button" class="btn btn--sun" data-download="plan">'+ICON.down+esc(p.button)+'</button><button type="button" class="btn btn--ghost" data-copy="plan">'+ICON.copy+'Copiar plano</button></div><p class="saved">'+ICON.check+'Salvo só neste aparelho. Nada é enviado para servidores.</p></section>';}
-  h+='<section class="concl" aria-label="Conclusão"><span class="kicker">'+ICON.star+' Conclusão</span><blockquote>'+esc(m.conclusion)+'</blockquote>'+
+  h+='<section class="concl reveal" aria-label="Conclusão"><span class="kicker">'+ICON.star+' Conclusão</span><blockquote>'+esc(m.conclusion)+'</blockquote>'+
     '<button type="button" class="btn btn--sun" data-complete="'+m.id+'">'+esc(m.button)+ICON.arrow+'</button></section>'+
     '<nav class="pager" aria-label="Navegação entre módulos">'+(prev?'<a href="#/'+prev.id+'">'+ICON.back+'Módulo '+prev.n+'</a>':'<a href="#/">'+ICON.back+'Início</a>')+(next?'<a href="#/'+next.id+'">Módulo '+next.n+ICON.arrow+'</a>':'<a href="#/bonus">Bônus'+ICON.arrow+'</a>')+'</nav></div>';
   return h;
@@ -123,21 +159,23 @@ function viewModule(m){
 
 function viewBonus(){
   var b=C.bonus;
-  return '<section class="mhero mhero--bonus"><div class="mhero__in"><span class="kicker">'+ICON.shield+' '+esc(b.label)+'</span><h1 tabindex="-1">'+esc(b.title)+'</h1>'+img('bonus','',true)+'</div></section><div class="wrap">'+
+  return '<section class="mhero mhero--bonus"><div class="mhero__in"><span class="kicker">'+ICON.shield+' '+esc(b.label)+'</span><h1 tabindex="-1">'+esc(b.title)+'</h1>'+buddyHTML('idle','Seus direitos também entram no jogo.')+img('bonus','',true)+'</div></section><div class="wrap">'+
    (CFG.bonusReviewPending?'<!-- REVISÃO HUMANA PENDENTE: para tirar o selo, mude bonusReviewPending para false em config.js --><p class="review">'+ICON.alert+'<span><strong>Conteúdo em revisão.</strong> Este módulo está passando por revisão antes da publicação definitiva.</span></p>':'')+
-   '<section class="opening" aria-label="Abertura">'+blocks(b.intro)+'</section><h2 class="label-h">Perguntas</h2><p class="hint">Toque em cada pergunta para ver a resposta.</p><div class="faq">'+acc(b.faq,'faq','Pergunta')+'</div>'+
+   '<section class="opening reveal" aria-label="Abertura">'+blocks(b.intro)+'</section><h2 class="label-h">Perguntas</h2><p class="hint">Toque em cada pergunta para ver a resposta.</p><div class="faq">'+acc(b.faq,'faq','Pergunta')+'</div>'+
    '<a class="btn btn--blue btn--block mte" href="'+esc(b.linkUrl)+'" target="_blank" rel="noopener">'+esc(b.linkLabel)+ICON.ext+'<span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"> (abre em nova aba)</span></a>'+
-   '<section class="concl concl--bonus" aria-label="Mensagem final do módulo"><span class="kicker" style="color:var(--mint)">'+ICON.star+' Mensagem final</span><blockquote>'+esc(b.conclusion)+'</blockquote><a class="btn btn--sun" href="#/">'+ICON.back+'Voltar ao início</a></section>'+
+   '<section class="concl concl--bonus reveal" aria-label="Mensagem final do módulo"><span class="kicker" style="color:var(--mint)">'+ICON.star+' Mensagem final</span><blockquote>'+esc(b.conclusion)+'</blockquote><a class="btn btn--sun" href="#/">'+ICON.back+'Voltar ao início</a></section>'+
    '<nav class="pager"><a href="#/m7">'+ICON.back+'Módulo 7</a><a href="#/final">Página final'+ICON.arrow+'</a></nav></div>';
 }
 
 function viewFinal(){
   var f=C.final, bt=f.buttons;
-  var colors=['#FFC83D','#FF6A3D','#2BC48A','#FFFFFF','#8FB0FF'], conf='';
+  var colors=['#FFC83D','#F59527','#2BC48A','#FFFFFF','#8FB0FF'], conf='';
   for(var i=0;i<46;i++){conf+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+colors[i%5]+';animation-delay:'+(Math.random()*1.4).toFixed(2)+'s;transform:rotate('+(i*37)+'deg)"></i>'}
   var n=doneCount();
-  return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos</span></div>'+
-   '<h1 tabindex="-1">'+esc(f.title)+'</h1><div class="fin__art">'+img('final','',true)+'</div>'+
+  var badges='<ul class="fin__badges" aria-label="Conquistas desbloqueadas">'+MODS.map(function(m){var b=BADGES[m.id], on=S.badges[m.id];return '<li'+(on?'':' style="opacity:.35"')+'><span class="badge-sticker badge-sticker--sm" aria-hidden="true">'+(on?b.emoji:'🔒')+'</span><span>'+esc(b.name)+'</span></li>'}).join('')+'</ul>';
+  return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><p class="kicker fin__k">Você zerou o guia</p><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos · '+xpTotal()+' XP</span></div>'+
+   '<h1 tabindex="-1">'+esc(f.title)+'</h1>'+badges+'<div class="fin__art">'+img('final','',true)+'</div>'+
+   '<div class="fin__cert"><div class="fin__cert-box"><label for="certName">Seu nome no certificado (opcional)</label><input id="certName" type="text" maxlength="40" autocomplete="nickname" placeholder="Ex.: Ana Souza" value="'+esc(S.name||'')+'" data-cert-name><button type="button" class="btn btn--sun" data-cert>'+ICON.down+'Baixar meu certificado</button><p>Imagem pra guardar ou compartilhar. Nada é enviado pra servidor.</p></div></div>'+
    '<div style="padding:0 20px"><div class="fin__card">'+blocks(f.blocks)+'<div class="fin__btns">'+
    '<a class="btn btn--ghost" href="#modulos" data-revisit>'+ICON.map+esc(bt[0])+'</a>'+
    '<button type="button" class="btn btn--sun" data-download="plan" data-from-final>'+ICON.down+esc(bt[1])+'</button>'+
@@ -146,11 +184,17 @@ function viewFinal(){
 
 /* ---------- drawer & progress ---------- */
 function updateProgress(){
-  var n=doneCount();
+  var n=doneCount(), xp=xpTotal();
   document.querySelector('.progress__fill').style.width=(n/7*100)+'%';
   document.querySelector('.progress__n').textContent=n;
   document.querySelector('.progress__bar').setAttribute('aria-valuenow',n);
-  document.querySelector('.progress__bar').setAttribute('aria-valuetext',n+' de 7 módulos concluídos');
+  document.querySelector('.progress__bar').setAttribute('aria-valuetext',n+' de 7 módulos concluídos, '+xp+' XP');
+  var xpEl=document.querySelector('.xp__n');
+  if(xpEl){
+    var prev=parseInt(xpEl.textContent,10)||0;
+    xpEl.textContent=xp;
+    if(xp>prev){var chip=xpEl.parentNode;chip.classList.remove('is-bump');void chip.offsetWidth;chip.classList.add('is-bump')}
+  }
   var route=location.hash.replace('#/','')||'home';
   document.querySelector('.drawer__list').innerHTML='<li><a href="#/"'+(route==='home'||route===''?' aria-current="page"':'')+'><span class="dnum">'+ICON.map+'</span><span><span class="dname">Início</span></span></a></li>'+
    MODS.map(function(m){return '<li class="'+(S.done[m.id]?'is-done':'')+'"><a href="#/'+m.id+'"'+(route===m.id?' aria-current="page"':'')+'><span class="dnum">'+(S.done[m.id]?ICON.check:m.n)+'</span><span><span class="dlabel">Módulo '+m.n+(S.done[m.id]?' · concluído':'')+'</span><span class="dname">'+esc(m.short.name)+'</span></span></a></li>'}).join('')+
@@ -161,9 +205,45 @@ var drawer=document.getElementById('drawer'), menuBtn=document.querySelector('.m
 function openDrawer(o){drawer.hidden=!o;menuBtn.setAttribute('aria-expanded',o);if(o){drawer.querySelector('.drawer__close').focus()}else{menuBtn.focus()}}
 menuBtn.addEventListener('click',function(){openDrawer(true)});
 drawer.addEventListener('click',function(e){if(e.target===drawer||e.target.closest('.drawer__close'))openDrawer(false);else if(e.target.closest('a')){drawer.hidden=true;menuBtn.setAttribute('aria-expanded','false')}});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!drawer.hidden)openDrawer(false)});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!drawer.hidden)openDrawer(false);if(e.key==='Escape'&&!badgePop.hidden)closeBadgePop()});
+
+/* ---------- som (off por padrão) ---------- */
+var soundBtn=document.querySelector('.sound-btn');
+function syncSoundBtn(){
+  soundBtn.classList.toggle('is-on',!!S.sound);
+  soundBtn.setAttribute('aria-pressed',S.sound?'true':'false');
+  soundBtn.setAttribute('aria-label',S.sound?'Desativar sons':'Ativar sons');
+  soundBtn.title=S.sound?'Sons ligados':'Sons desligados';
+}
+function beep(kind){
+  if(!S.sound||reduceMotion())return;
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    var ctx=beep.ctx||(beep.ctx=new AC());
+    if(ctx.state==='suspended')ctx.resume();
+    var o=ctx.createOscillator(), g=ctx.createGain(), now=ctx.currentTime;
+    o.type='sine';
+    if(kind==='ok'){o.frequency.setValueAtTime(523,now);o.frequency.setValueAtTime(784,now+.07)}
+    else if(kind==='ko'){o.frequency.setValueAtTime(220,now);o.frequency.setValueAtTime(174,now+.1)}
+    else if(kind==='badge'){o.frequency.setValueAtTime(392,now);o.frequency.setValueAtTime(523,now+.1);o.frequency.setValueAtTime(784,now+.2)}
+    else o.frequency.setValueAtTime(440,now);
+    g.gain.setValueAtTime(0.06,now);g.gain.exponentialRampToValueAtTime(0.001,now+.28);
+    o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+.3);
+  }catch(e){}
+}
+soundBtn.addEventListener('click',function(){S.sound=!S.sound;save();syncSoundBtn();if(S.sound)beep('ok')});
+syncSoundBtn();
 
 /* ---------- quiz ---------- */
+function reactBuddy(mood,msg){
+  main.querySelectorAll('.buddy').forEach(function(el){
+    el.setAttribute('data-mood',mood);
+    var face=el.querySelector('.buddy__face');
+    if(face)face.textContent={idle:'😊',start:'🙌',yay:'🔥',think:'🤔',win:'😎'}[mood]||'😊';
+    var say=el.querySelector('.buddy__say');
+    if(say)say.textContent=msg||pick(SAY[mood]||SAY.idle);
+  });
+}
 function showAnswer(box,mid,key,animate){
   var m=MODS.filter(function(x){return x.id===mid})[0], a=m.activity, ok=key===a.correct;
   box.classList.add('is-answered');
@@ -172,7 +252,11 @@ function showAnswer(box,mid,key,animate){
   fb.className='fb is-on '+(ok?'fb--ok':'fb--ko');
   fb.innerHTML='<div class="fb__h"><span class="fb__ic" aria-hidden="true">'+(ok?ICON.check:ICON.bulb)+'</span>'+(ok?'Você acertou!':'Vamos pensar juntos')+'</div><p>'+(ok?a.ok:a.ko)+'</p>'+
     '<p style="font-size:14px;color:var(--muted)">Alternativa correta: <strong>'+a.correct+'</strong>.</p><div class="row-btns"><button type="button" class="btn btn--ghost" data-retry="'+mid+'">'+ICON.retry+'Tentar novamente</button></div>';
-  if(animate)fb.focus({preventScroll:true});
+  if(animate){
+    fb.focus({preventScroll:true});
+    reactBuddy(ok?'yay':'think', pick(ok?SAY.yay:SAY.think));
+    beep(ok?'ok':'ko');
+  }
 }
 function resetQuiz(mid){
   var box=document.querySelector('[data-quiz="'+mid+'"]');
@@ -180,6 +264,7 @@ function resetQuiz(mid){
   box.querySelectorAll('.opt').forEach(function(b){b.classList.remove('is-correct','is-wrong');b.setAttribute('aria-pressed','false');b.removeAttribute('aria-disabled')});
   var fb=box.parentNode.querySelector('.fb');fb.className='fb';fb.innerHTML='';
   delete S.ans[mid];save();box.querySelector('.opt').focus();
+  reactBuddy('idle','Bora tentar de novo.');
 }
 
 /* ---------- plano / copiar / baixar ---------- */
@@ -206,6 +291,138 @@ function checklistState(){
   var n=0;box.forEach(function(c){if(c.checked)n++});
   var cnt=document.querySelector('.check-count');cnt.textContent=n+' de '+box.length+' marcados';
   document.querySelector('.done-msg').classList.toggle('is-on',n===box.length);
+  if(n===box.length)reactBuddy('yay','Checklist completo. Organizado!');
+}
+
+/* ---------- conquistas + certificado ---------- */
+var badgePop=document.getElementById('badgePop');
+var pendingGo=null, badgeTimer=0;
+function fillConfetti(el){
+  if(!el)return;
+  var colors=['#FFC83D','#F59527','#2BC48A','#FFFFFF','#8FB0FF'], html='';
+  for(var i=0;i<40;i++) html+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+colors[i%5]+';animation-delay:'+(Math.random()*1.1).toFixed(2)+'s;transform:rotate('+(i*41)+'deg)"></i>';
+  el.innerHTML=html;
+}
+function showBadgePop(id,go){
+  pendingGo=go;
+  var b=BADGES[id]||{emoji:'⭐',name:'Conquista',line:'Mais um passo dado.',xp:0};
+  document.getElementById('badgePopIcon').textContent=b.emoji;
+  document.getElementById('badgePopTitle').textContent=b.name;
+  document.getElementById('badgePopXp').textContent='+'+b.xp+' XP · total '+xpTotal();
+  document.getElementById('badgePopLine').textContent=b.line;
+  if(!reduceMotion())fillConfetti(badgePop.querySelector('.confetti'));
+  else badgePop.querySelector('.confetti').innerHTML='';
+  badgePop.hidden=false;
+  var btn=badgePop.querySelector('[data-badge-go]');
+  if(btn)btn.focus();
+  beep('badge');
+  clearTimeout(badgeTimer);
+  badgeTimer=setTimeout(closeBadgePop, reduceMotion()?400:2200);
+}
+function closeBadgePop(){
+  if(badgePop.hidden)return;
+  clearTimeout(badgeTimer);
+  badgePop.hidden=true;
+  var go=pendingGo;pendingGo=null;
+  if(go)go();
+}
+badgePop.addEventListener('click',function(e){
+  if(e.target.closest('[data-badge-go]')||e.target===badgePop)closeBadgePop();
+});
+
+function unlockBadge(id,go){
+  var first=!S.badges[id];
+  S.badges[id]=true;
+  save();
+  updateProgress();
+  if(first) showBadgePop(id,go);
+  else if(go) go();
+}
+
+function makeCertificate(done){
+  var c=document.createElement('canvas');
+  c.width=1080;c.height=1350;
+  var ctx=c.getContext('2d');
+  var logo=new Image();
+  logo.onload=function(){drawCert(ctx,c,logo);done(c)};
+  logo.onerror=function(){drawCert(ctx,c,null);done(c)};
+  logo.src='img/logo-aciegjovem.png';
+}
+function drawCert(ctx,c,logo){
+  var w=c.width,h=c.height;
+  ctx.fillStyle='#031951';ctx.fillRect(0,0,w,h);
+  // formas
+  ctx.save();
+  ctx.fillStyle='#F59527';ctx.beginPath();ctx.arc(-40,160,180,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#FFC83D';roundRect(ctx,w-200,-40,260,260,40);ctx.fill();
+  ctx.fillStyle='#1747D1';ctx.beginPath();ctx.arc(w-80,h-80,200,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // moldura
+  ctx.strokeStyle='rgba(255,200,61,.55)';ctx.lineWidth=8;ctx.strokeRect(48,48,w-96,h-96);
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;ctx.strokeRect(64,64,w-128,h-128);
+  if(logo){var lw=420,lh=lw*(205/684);ctx.drawImage(logo,(w-lw)/2,110,lw,lh)}
+  ctx.fillStyle='#FFC83D';ctx.font='700 28px "Plus Jakarta Sans",system-ui,sans-serif';ctx.textAlign='center';
+  ctx.fillText('CERTIFICADO',w/2,logo?340:180);
+  ctx.fillStyle='#fff';ctx.font='800 86px "Bricolage Grotesque",system-ui,sans-serif';
+  ctx.fillText('Você zerou',w/2,460);
+  ctx.fillText('o guia!',w/2,545);
+  var nome=(S.name||'').trim();
+  ctx.fillStyle='#F59527';ctx.font='700 36px "Plus Jakarta Sans",system-ui,sans-serif';
+  if(nome) ctx.fillText(nome,w/2,620);
+  ctx.fillStyle='#E4ECFF';ctx.font='600 30px "Plus Jakarta Sans",system-ui,sans-serif';
+  wrapCenter(ctx,'Meu Primeiro Emprego. E Agora?',w/2,nome?680:640,820,40);
+  ctx.fillStyle='#FFC83D';ctx.font='700 24px "Plus Jakarta Sans",system-ui,sans-serif';
+  ctx.fillText('7 missões concluídas  ·  '+xpTotal()+' XP',w/2,760);
+  // badges (número da missão + nome: confiável sem fonte de emoji)
+  var ids=MODS.map(function(m){return m.id});
+  var gap=118, start=(w-(ids.length-1)*gap)/2;
+  ids.forEach(function(id,i){
+    var b=BADGES[id], x=start+i*gap, y=850, on=!!S.badges[id];
+    ctx.save();ctx.translate(x,y);ctx.rotate(-7*Math.PI/180);
+    ctx.fillStyle=on?'#fff':'#16306A';
+    roundRect(ctx,-42,-42,84,84,22);ctx.fill();
+    ctx.fillStyle=on?'#F59527':'#2A4A8A';
+    ctx.fillRect(-42,38,84,8);
+    ctx.fillStyle=on?'#031951':'#8AA0C8';
+    ctx.font='800 32px "Plus Jakarta Sans",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(on?String(i+1):'–',0,-4);
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle=on?'#FFC83D':'rgba(255,255,255,.4)';
+    ctx.font='700 13px "Plus Jakarta Sans",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='top';
+    var nm=b.name.toUpperCase();
+    ctx.fillText(nm, x, y+56);
+    ctx.restore();
+  });
+  var now=new Date();
+  var data=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric',timeZone:'America/Sao_Paulo'});
+  ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='600 22px "Plus Jakarta Sans",system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('ACIEG Jovem  ·  '+data,w/2,h-120);
+  ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='500 18px "Plus Jakarta Sans",system-ui,sans-serif';
+  ctx.fillText('Guia digital gratuito  ·  aciegjovem.com.br/primeiro-emprego',w/2,h-86);
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function wrapCenter(ctx,text,x,y,max,lh){
+  var words=text.split(' '), line='', lines=[], i;
+  for(i=0;i<words.length;i++){
+    var t=line?line+' '+words[i]:words[i];
+    if(ctx.measureText(t).width>max&&line){lines.push(line);line=words[i]}else line=t;
+  }
+  if(line)lines.push(line);
+  lines.forEach(function(l,i){ctx.fillText(l,x,y+i*lh)});
+}
+function downloadCanvas(c,name){
+  c.toBlob(function(blob){
+    if(!blob){toast('Não deu pra gerar o certificado.');return}
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},600);
+    toast('Certificado baixado!');
+  },'image/png');
 }
 
 /* ---------- eventos ---------- */
@@ -218,22 +435,76 @@ main.addEventListener('click',function(e){
   if((t=e.target.closest('[data-download]'))){
     if(t.hasAttribute('data-from-final')&&!hasPlan()){toast('Seu plano ainda está vazio. Preencha no Módulo 7.');location.hash='#/m7?plano';return}
     download();return}
-  if((t=e.target.closest('[data-complete]'))){var id=t.dataset.complete;S.done[id]=true;save();var i=MODS.findIndex(function(m){return m.id===id});location.hash=i<6?'#/'+MODS[i+1].id:'#/final';return}
+  if((t=e.target.closest('[data-complete]'))){
+    var id=t.dataset.complete;
+    var first=!S.done[id]||!S.badges[id];
+    S.done[id]=true;save();
+    var go=function(){var i=MODS.findIndex(function(m){return m.id===id});location.hash=i<6?'#/'+MODS[i+1].id:'#/final'};
+    if(first) unlockBadge(id,go);
+    else go();
+    return;
+  }
   if((t=e.target.closest('[data-revisit]'))){e.preventDefault();location.hash='#/?modulos';return}
+  if((t=e.target.closest('[data-cert]'))){makeCertificate(function(c){downloadCanvas(c,'certificado-primeiro-emprego.png')});return}
 });
 main.addEventListener('change',function(e){var c=e.target.closest('[data-check]');if(c){S.checks[+c.dataset.check]=c.checked;save();checklistState()}});
-main.addEventListener('input',function(e){var t=e.target;if(t.dataset.ex!==undefined){S.ex[+t.dataset.ex]=t.value;save()}else if(t.dataset.plan!==undefined){S.plan[+t.dataset.plan]=t.value;save()}});
+main.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.dataset.ex!==undefined){S.ex[+t.dataset.ex]=t.value;save()}
+  else if(t.dataset.plan!==undefined){S.plan[+t.dataset.plan]=t.value;save()}
+  else if(t.hasAttribute('data-cert-name')){S.name=t.value;save()}
+});
+
+/* ---------- revelar ao rolar + parallax leve ---------- */
+var io=null;
+function bindReveal(){
+  var els=main.querySelectorAll('.reveal');
+  if(reduceMotion()){els.forEach(function(el){el.classList.add('is-in')});return}
+  if(io)io.disconnect();
+  io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target)}})
+  },{rootMargin:'0px 0px -8% 0px',threshold:0.08});
+  els.forEach(function(el){io.observe(el)});
+  // first paint: hero already in view
+  requestAnimationFrame(function(){
+    els.forEach(function(el){
+      var r=el.getBoundingClientRect();
+      if(r.top<window.innerHeight*0.92){el.classList.add('is-in');if(io)io.unobserve(el)}
+    });
+  });
+}
+var parallaxOn=false;
+function onScrollParallax(){
+  var layer=main.querySelector('.floaties');
+  if(!layer||reduceMotion())return;
+  var y=window.scrollY||0;
+  layer.style.transform='translate3d(0,'+(y*0.18)+'px,0)';
+}
+function bindParallax(){
+  var has=!!main.querySelector('.floaties');
+  if(has&&!parallaxOn&&!reduceMotion()){window.addEventListener('scroll',onScrollParallax,{passive:true});parallaxOn=true}
+  if(!has&&parallaxOn){window.removeEventListener('scroll',onScrollParallax);parallaxOn=false}
+  if(has)onScrollParallax();
+}
 
 /* ---------- rotas ---------- */
 function route(){
+  if(badgePop&&!badgePop.hidden){clearTimeout(badgeTimer);badgePop.hidden=true;pendingGo=null}
   var raw=location.hash.replace(/^#\/?/,''), parts=raw.split('?'), r=parts[0]||'home', anchor=parts[1];
   if(raw==='modulos'){r='home';anchor='modulos'}
   var m=MODS.filter(function(x){return x.id===r})[0];
   var html=m?viewModule(m):r==='bonus'?viewBonus():r==='final'?viewFinal():viewHome();
   main.innerHTML=html;
+  main.classList.remove('view-in');void main.offsetWidth;main.classList.add('view-in');
   document.title=(m?'Módulo '+m.n+': '+m.short.name+' | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
   if(m){var k=S.ans[m.id];if(k)showAnswer(document.querySelector('[data-quiz]'),m.id,k,false);checklistState()}
   updateProgress();
+  bindReveal();
+  bindParallax();
+  if(r==='bonus'&&!S.badges.bonus){
+    S.badges.bonus=true;save();updateProgress();
+    toast('Conquista desbloqueada: Meus direitos · +50 XP');
+  }
   if(anchor&&document.getElementById(anchor)){requestAnimationFrame(function(){document.getElementById(anchor).scrollIntoView()})}
   else{window.scrollTo(0,0);var h=main.querySelector('h1[tabindex]');if(h&&route.ready)h.focus({preventScroll:true})}
   route.ready=true;

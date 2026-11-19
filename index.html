@@ -13,7 +13,7 @@
 <link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/favicon.png">
-<link rel="stylesheet" href="styles.css?v=logo">
+<link rel="stylesheet" href="styles.css?v=play">
 </head>
 <body>
 <a class="skip" href="#main">Pular para o conteúdo</a>
@@ -26,7 +26,12 @@
     <div class="progress" aria-label="Progresso da jornada">
       <div class="progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" aria-label="Módulos concluídos"><span class="progress__fill"></span></div>
       <span class="progress__txt"><b class="progress__n">0</b>/7</span>
+      <span class="xp" aria-label="Pontos de experiência"><b class="xp__n">0</b><span class="xp__lbl"> XP</span></span>
     </div>
+    <button class="sound-btn" type="button" aria-pressed="false" aria-label="Ativar sons" title="Sons desligados">
+      <svg class="sound-btn__off" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7L7 10H4v4h3l4 3V7zM19 9l-6 6M13 9l6 6"/></svg>
+      <svg class="sound-btn__on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7L7 10H4v4h3l4 3V7z"/><path d="M15.5 9.5a4 4 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/></svg>
+    </button>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="drawer" aria-label="Abrir lista de módulos">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
     </button>
@@ -47,8 +52,19 @@
   </div>
 </footer>
 <div class="toast" role="status" aria-live="polite"></div>
+<div class="badge-pop" id="badgePop" hidden>
+  <div class="badge-pop__card" role="dialog" aria-modal="true" aria-labelledby="badgePopTitle" aria-describedby="badgePopLine">
+    <div class="confetti badge-pop__fx" aria-hidden="true"></div>
+    <p class="kicker badge-pop__k">Conquista desbloqueada</p>
+    <div class="badge-sticker" id="badgePopIcon" aria-hidden="true"></div>
+    <h2 id="badgePopTitle"></h2>
+    <p class="badge-pop__xp" id="badgePopXp"></p>
+    <p class="badge-pop__line" id="badgePopLine"></p>
+    <button type="button" class="btn btn--sun" data-badge-go>Seguir</button>
+  </div>
+</div>
 <script src="config.js"></script>
 <script src="content.js"></script>
-<script src="app.js?v=logo"></script>
+<script src="app.js?v=play"></script>
 </body>
 </html>
