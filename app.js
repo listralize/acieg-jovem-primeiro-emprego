@@ -150,8 +150,7 @@ function viewOla(){
     '<div class="wrap"><form class="lead__form" id="leadForm" novalidate>'+
     '<label for="ln">Como você se chama?</label><input class="lin" id="ln" name="nome" type="text" autocomplete="name" maxlength="80" required placeholder="Seu nome">'+
     '<label for="lw">WhatsApp</label><input class="lin" id="lw" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(62) 99999-9999">'+
-    '<div class="lead__row"><div><label for="li">Idade</label><input class="lin" id="li" name="idade" type="number" inputmode="numeric" min="14" max="40" required placeholder="16"></div>'+
-    '<div><label for="lemp">Empresa onde você começou</label><input class="lin" id="lemp" name="empresa" type="text" maxlength="120" required placeholder="Nome da empresa"></div></div>'+
+    '<label for="li">Idade</label><input class="lin" id="li" name="idade" type="number" inputmode="numeric" min="14" max="40" required placeholder="16">'+
     '<details class="lead__more"><summary>E-mail e cidade <span>(opcional)</span></summary>'+
     '<label for="lem">E-mail</label><input class="lin" id="lem" name="email" type="email" autocomplete="email" maxlength="120" placeholder="seu@email.com">'+
     '<label for="lcid">Cidade</label><input class="lin" id="lcid" name="cidade" type="text" maxlength="80" placeholder="Goiânia"></details>'+
@@ -523,7 +522,6 @@ main.addEventListener('submit',function(e){
   var nome=document.getElementById('ln').value.trim();
   var wa=document.getElementById('lw').value;
   var idade=parseInt(document.getElementById('li').value,10);
-  var empresa=document.getElementById('lemp').value.trim();
   var email=document.getElementById('lem').value.trim();
   var cidade=document.getElementById('lcid').value.trim();
   var consent=document.getElementById('lcons').checked;
@@ -532,12 +530,11 @@ main.addEventListener('submit',function(e){
   if(nome.length<2) msg='Conta seu nome (pelo menos 2 letras).';
   else if(!validWa(wa)) msg='WhatsApp brasileiro inválido. Use DDD + número.';
   else if(!idade||idade<14||idade>40) msg='Idade entre 14 e 40 anos.';
-  else if(empresa.length<2) msg='Conta a empresa onde você começou.';
   else if(email && !/[^\s@]+@[^\s@]+\.[^\s@]+/.test(email)) msg='E-mail inválido.';
   else if(!consent) msg='Marca a autorização pra gente te acompanhar.';
   if(msg){err.textContent=msg;return}
   var btn=document.getElementById('leadGo'); btn.disabled=true; btn.textContent='Salvando…';
-  fetch('/api/primeiro-emprego/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome,whatsapp:wa,idade:idade,empresa:empresa,email:email||undefined,cidade:cidade||undefined,consent:true,website:website})})
+  fetch('/api/primeiro-emprego/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome,whatsapp:wa,idade:idade,email:email||undefined,cidade:cidade||undefined,consent:true,website:website})})
     .then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}})})
     .then(function(res){
       if(!res.j||!res.j.ok){throw new Error((res.j&&res.j.error)||'Não rolou agora. Tenta de novo.');}
