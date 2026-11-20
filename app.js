@@ -30,7 +30,8 @@ var ICON={
   retry:'<svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15A8 8 0 0 0 20 14M18.5 9A8 8 0 0 0 4 10"/></svg>',
   star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
   shield:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>',
-  map:'<svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>'
+  map:'<svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
 };
 var BADGES={
   m1:{emoji:'👋',name:'Primeiro passo',line:'Você chegou, se apresentou e já saiu na frente.',xp:100},
@@ -160,6 +161,8 @@ function lessonSteps(m){
   return s;
 }
 function lessonPath(m,id){return '#/'+m.id+(id&&id!=='hook'?'/'+id:'')}
+var ART_CROP=['top','left','center','right','bot'];
+function lessonArt(m,i,eager){return '<div class="lesson__visual">'+img(m.id,'lesson__art lesson__art--'+ART_CROP[(i||0)%5],!!eager)+'<span class="lesson__num" aria-hidden="true">'+String(m.n).padStart(2,'0')+'</span></div>'}
 function syncDock(){
   var btn=document.querySelector('.dock [data-next]');
   if(!btn)return;
@@ -203,11 +206,17 @@ function viewHome(){
   var names=MODS.map(function(m,i){return 'Missão '+String(m.n).padStart(2,'0')+' · '+(h.learn[i]&&h.learn[i].name||m.short.name)}).concat(['Bônus · Direitos']);
   var tick=esc(names.join('  ·  '));
   return '<section class="hero hero--poster">'+
-    '<div class="hero__in">'+
+    '<div class="hero__stage">'+
+    '<div class="hero__visual">'+
+    '<span class="hero__sticker hero__sticker--kit">Kit da jornada</span>'+
+    '<div class="hero__card">'+img('home','',true)+'<div class="hero__card-meta"><span>Crachá do primeiro emprego</span><b>7 missões pra jogar</b></div></div>'+
+    '<span class="hero__sticker hero__sticker--xp">Até +750 XP</span>'+
+    '</div>'+
+    '<div class="hero__copy">'+
     '<p class="hero__kicker">Guia da ACIEG Jovem · 7 missões</p>'+
     '<h1><span class="hero__line"><span>Meu</span></span><span class="hero__line"><span>Primeiro</span></span><span class="hero__line"><span>Emprego.</span></span><em class="hero__now">E Agora?</em></h1>'+
     '<p class="hero__sub">'+esc(h.subtitle)+'</p>'+
-    '</div>'+
+    '</div></div>'+
     '<div class="hero__tick" aria-hidden="true"><div class="hero__tick-track"><span>'+tick+'  ·  '+tick+'  ·  </span></div></div>'+
     '<div class="hero__cta"><a class="btn btn--sun" href="'+href+'">'+label+ICON.arrow+'</a></div>'+
     '</section>';
@@ -219,18 +228,20 @@ function viewTrail(){
   var first=S.name?S.name.trim().split(' ')[0]:'';
   var title=first?('Boa, '+first+'. Aqui está o mapa.'):'Conseguiu o emprego. Aqui está o mapa.';
   var nodes=MODS.map(function(m,i){
-    var d=!!S.done[m.id], isNext=!!(next&&next.id===m.id);
-    return '<a class="trail__node'+(d?' is-done':'')+(isNext?' is-next':'')+'" href="#/'+m.id+'">'+
-      '<span class="trail__num">'+(d?ICON.check:String(m.n).padStart(2,'0'))+'</span>'+
-      '<span class="trail__meta"><span class="trail__k">Missão '+String(m.n).padStart(2,'0')+(d?' · concluída':(isNext?' · agora':''))+'</span>'+
+    var d=!!S.done[m.id], isNext=!!(next&&next.id===m.id), locked=!d&&!isNext&&!!next&&m.n>next.n;
+    var b=BADGES[m.id]||{};
+    return '<a class="trail__node'+(d?' is-done':'')+(isNext?' is-next':'')+(locked?' is-locked':'')+'" href="#/'+m.id+'">'+
+      '<span class="trail__num">'+(d?ICON.check:(locked?ICON.lock:String(m.n).padStart(2,'0')))+'</span>'+
+      '<span class="trail__meta"><span class="trail__k">Missão '+String(m.n).padStart(2,'0')+(d?' · feita':(isNext?' · agora':(locked?' · bloqueada':'')))+'</span>'+
       '<span class="trail__t">'+esc(h.learn[i].name)+'</span>'+
-      '<span class="trail__d">'+esc(h.learn[i].desc)+'</span></span></a>';
+      '<span class="trail__d">'+esc(h.learn[i].desc)+'</span></span>'+
+      (d?'<span class="trail__badge" aria-hidden="true">'+b.emoji+'</span>':'')+'</a>';
   }).join('');
   var cta=all
     ?'<a class="btn btn--sun btn--block" href="#/final">Ver certificado'+ICON.arrow+'</a>'
     :'<a class="btn btn--sun btn--block" href="#/'+(next||MODS[0]).id+'">'+(doneCount()?'Continuar missão '+String(next.n).padStart(2,'0'):'Começar missão 01')+ICON.arrow+'</a>';
   return '<section class="trail" id="modulos"><div class="trail__intro"><p class="kicker">Sua trilha</p><h2 id="aprender">'+esc(title)+'</h2><p class="trail__lead">7 missões curtas. Uma ideia por tela. Sem apostila.</p></div>'+
-    '<div class="trail__path">'+nodes+'</div>'+
+    '<div class="trail__board"><svg class="trail__snake" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 7C14 13 86 15 86 21C86 27 14 29 14 35C14 41 86 43 86 49C86 55 14 57 14 63C14 69 86 71 86 77C86 83 14 85 14 91"/></svg><div class="trail__path">'+nodes+'</div></div>'+
     '<a class="bonus-call" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir quando quiser'+ICON.arrow+'</span></a>'+
     '<div class="trail__cta">'+cta+'</div>'+
     (S.leadToken?'':'<p class="lead__chip"><a href="#/ola">Quer que a ACIEG Jovem acompanhe você? É um oi rápido.</a></p>')+
@@ -240,14 +251,15 @@ function viewTrail(){
 function activityHTML(m){
   var a=m.activity;
   return '<section class="lesson lesson--quiz" data-kind="quiz"><div class="lesson__stage">'+
+   lessonArt(m,3)+
+   '<div class="lesson__copy">'+
    '<p class="kicker">Missão '+String(m.n).padStart(2,'0')+' · sua vez</p>'+
    '<p class="sim__situ">'+esc(sitText(m))+'</p>'+
    '<h1 class="sim__q" id="sim-'+m.id+'" tabindex="-1">'+a.question+'</h1>'+
    '<div class="opts" role="group" aria-labelledby="sim-'+m.id+'" data-quiz="'+m.id+'">'+a.options.map(function(o){
      return '<button type="button" class="opt" data-k="'+o.key+'" aria-pressed="false"><span class="opt__k">'+o.key+'</span><span class="opt__t">'+o.html+'</span><span class="opt__flag">'+ICON.check+'<span class="sr">Alternativa correta</span></span></button>'}).join('')+'</div>'+
-   '<div class="fb" aria-live="polite" tabindex="-1"></div></div></section>';
+   '<div class="fb" aria-live="polite" tabindex="-1"></div></div></div></section>';
 }
-
 function viewLesson(m, stepId){
   var steps=lessonSteps(m);
   var i=steps.findIndex(function(s){return s.id===stepId});
@@ -260,59 +272,66 @@ function viewLesson(m, stepId){
   var body='';
   if(st.kind==='hook'){
     body='<section class="lesson lesson--navy" data-kind="hook"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+'</p>'+
+      lessonArt(m,0,true)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+'</p>'+
       '<h1 tabindex="-1">'+esc(m.short.name)+'</h1>'+
       '<p class="lesson__hook">'+esc(L.hook||m.short.desc)+'</p>'+
-      '<p class="lesson__sub">Uma ideia por tela. Leva poucos minutos.</p>'+
-      img(m.id,'lesson__stamp',true,true)+
+      '<p class="lesson__sub">Uma ideia por tela. Leva poucos minutos.</p></div>'+
       '</div></section>';
   }else if(st.kind==='idea'){
     body='<section class="lesson" data-kind="idea"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · ideia</p>'+
+      lessonArt(m,(st.id==='idea2'?2:1))+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · ideia</p>'+
       '<h1 tabindex="-1">'+esc(st.item.t)+'</h1>'+
-      '<p class="lesson__d">'+esc(st.item.d)+'</p></div></section>';
+      '<p class="lesson__d">'+esc(st.item.d)+'</p></div></div></section>';
   }else if(st.kind==='teach'){
     var items=(st.item.items||[]).map(function(t){return '<li>'+esc(t)+'</li>'}).join('');
     body='<section class="lesson" data-kind="teach"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · '+st.n+' / 5</p>'+
+      lessonArt(m,st.n||0)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · '+st.n+' / 5</p>'+
       '<h1 tabindex="-1">'+esc(st.item.t)+'</h1>'+
       '<p class="lesson__d">'+esc(st.item.d)+'</p>'+
       (items?'<ul class="lesson__items">'+items+'</ul>':'')+
       (st.item.tip?'<p class="lesson__tip">'+esc(st.item.tip)+'</p>':'')+
-      '</div></section>';
+      '</div></div></section>';
   }else if(st.kind==='pack'){
     var c=m.checklist;
     body='<section class="lesson" data-kind="pack"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · kit</p>'+
+      lessonArt(m,2)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · kit</p>'+
       '<h1 tabindex="-1">Arrume a mochila</h1>'+
       '<p class="lesson__d">Toque em cada compromisso para guardar no kit.</p>'+
       '<ul class="pack checks">'+c.items.map(function(t,j){return '<li><label class="check"><input type="checkbox" data-check="'+j+'"'+(S.checks[j]?' checked':'')+'><span class="check__box" aria-hidden="true">'+ICON.check+'</span><span>'+esc(t)+'</span></label></li>'}).join('')+'</ul>'+
-      '<p class="check-count" aria-live="polite"></p><div class="done-msg" role="status">'+ICON.star+'<span>'+esc(c.done)+'</span></div></div></section>';
+      '<p class="check-count" aria-live="polite"></p><div class="done-msg" role="status">'+ICON.star+'<span>'+esc(c.done)+'</span></div></div></div></section>';
   }else if(st.kind==='write'){
     var e=m.exercise;
     body='<section class="lesson" data-kind="write"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · sua vez</p>'+
+      lessonArt(m,4)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · sua vez</p>'+
       '<h1 tabindex="-1">'+esc(e.title)+'</h1>'+
       e.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-ex="'+j+'" rows="2">'+esc(S.ex[j]||'')+'</textarea></label>'}).join('')+
-      '<div class="row-btns"><button type="button" class="btn btn--blue" data-copy="ex">'+ICON.copy+'Copiar respostas</button></div><p class="saved">'+ICON.check+'Salvo neste aparelho.</p></div></section>';
+      '<div class="row-btns"><button type="button" class="btn btn--blue" data-copy="ex">'+ICON.copy+'Copiar respostas</button></div><p class="saved">'+ICON.check+'Salvo neste aparelho.</p></div></div></section>';
   }else if(st.kind==='plan'){
     var p=m.plan;
     body='<section class="lesson" data-kind="plan" id="plano"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · plano</p>'+
+      lessonArt(m,1)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · plano</p>'+
       '<h1 tabindex="-1">'+esc(p.title)+'</h1>'+
       '<p class="lesson__d">'+esc(p.lead)+'</p>'+
       p.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-plan="'+j+'" rows="2">'+esc(S.plan[j]||'')+'</textarea></label>'}).join('')+
-      '<div class="row-btns"><button type="button" class="btn btn--sun" data-download="plan">'+ICON.down+esc(p.button)+'</button><button type="button" class="btn btn--ghost" data-copy="plan">'+ICON.copy+'Copiar plano</button></div><p class="saved">'+ICON.check+'Salvo só neste aparelho.</p></div></section>';
+      '<div class="row-btns"><button type="button" class="btn btn--sun" data-download="plan">'+ICON.down+esc(p.button)+'</button><button type="button" class="btn btn--ghost" data-copy="plan">'+ICON.copy+'Copiar plano</button></div><p class="saved">'+ICON.check+'Salvo só neste aparelho.</p></div></div></section>';
   }else if(st.kind==='quiz'){
     body=activityHTML(m);
   }else if(st.kind==='win'){
     var b=BADGES[m.id]||{};
-    body='<section class="lesson lesson--win" data-kind="win"><div class="lesson__stage">'+
-      '<p class="kicker">'+kicker+' · concluída</p>'+
+    body='<section class="lesson lesson--win" data-kind="win"><div class="confetti" aria-hidden="true"></div><div class="lesson__stage">'+
+      lessonArt(m,0)+
+      '<div class="lesson__copy"><p class="kicker">'+kicker+' · concluída</p>'+
+      '<div class="badge-sticker" aria-hidden="true">'+(b.emoji||'')+'</div>'+
       '<p class="lesson__xp">+'+(b.xp||100)+' XP</p>'+
       '<h1 tabindex="-1">Missão cumprida</h1>'+
       '<p class="lesson__hook">'+esc(b.name||'')+'</p>'+
-      '<p class="lesson__done">'+esc(m.conclusion)+'</p></div></section>';
+      '<p class="lesson__done">'+esc(m.conclusion)+'</p></div></div></section>';
   }
   var next=steps[i+1], prev=steps[i-1];
   var label=st.kind==='hook'?'Começar':(st.kind==='win'?((m.n===7)?'Ir para o certificado':'Ir para a missão '+String(m.n+1).padStart(2,'0')):'Próximo');
@@ -422,9 +441,14 @@ function showAnswer(box,mid,key,animate){
   fb.className='fb is-on '+(ok?'fb--ok':'fb--ko');
   fb.innerHTML='<div class="fb__h"><span class="fb__ic" aria-hidden="true">'+(ok?ICON.check:ICON.bulb)+'</span>'+(ok?'Você acertou!':'Vamos pensar juntos')+'</div><p>'+(ok?a.ok:a.ko)+'</p>'+
     '<div class="row-btns"><button type="button" class="btn btn--ghost" data-retry="'+mid+'">'+ICON.retry+'Tentar de novo</button></div>';
+  var lesson=document.querySelector('.lesson--quiz');
+  if(lesson) lesson.classList.add('is-answered');
   if(animate){
     fb.focus({preventScroll:true});
     beep(ok?'ok':'ko');
+    setTimeout(function(){try{fb.scrollIntoView({block:'center',behavior:reduceMotion()?'auto':'smooth'})}catch(e){}},80);
+  }else{
+    setTimeout(function(){try{fb.scrollIntoView({block:'nearest',behavior:'auto'})}catch(e){}},40);
   }
   syncDock();
 }
@@ -433,6 +457,7 @@ function resetQuiz(mid){
   box.classList.remove('is-answered');
   box.querySelectorAll('.opt').forEach(function(b){b.classList.remove('is-correct','is-wrong');b.setAttribute('aria-pressed','false');b.removeAttribute('aria-disabled')});
   var fb=box.parentNode.querySelector('.fb');fb.className='fb';fb.innerHTML='';
+  var lesson=document.querySelector('.lesson--quiz');if(lesson)lesson.classList.remove('is-answered');
   delete S.ans[mid];save();box.querySelector('.opt').focus();
   syncDock();
 }
@@ -467,6 +492,23 @@ function checklistState(){
 /* ---------- conquistas + certificado ---------- */
 var badgePop=document.getElementById('badgePop');
 var pendingGo=null, badgeTimer=0;
+function flyXp(amount, done){
+  var dest=document.querySelector('.xp');
+  var src=document.querySelector('.lesson__xp');
+  function finish(){updateProgress();if(done)done()}
+  if(!dest||reduceMotion()||!src){finish();return}
+  var a=src.getBoundingClientRect(), b=dest.getBoundingClientRect();
+  var el=document.createElement('div');
+  el.className='xp-fly';
+  el.textContent='+'+amount+' XP';
+  el.style.left=Math.round(a.left)+'px';
+  el.style.top=Math.round(a.top)+'px';
+  document.body.appendChild(el);
+  void el.offsetWidth;
+  el.style.transform='translate('+Math.round(b.left-a.left)+'px,'+Math.round(b.top-a.top)+'px) scale(.55)';
+  el.style.opacity='0.15';
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);finish()},620);
+}
 function fillConfetti(el){
   if(!el)return;
   var colors=['#FFC83D','#F59527','#2BC48A','#FFFFFF','#8FB0FF'], html='';
@@ -716,12 +758,25 @@ function route(){
   document.body.classList.toggle('is-navy-lesson', !!m && (kind==='hook'||kind==='quiz'||kind==='win'));
   main.classList.remove('view-in');void main.offsetWidth;main.classList.add('view-in');
   document.title=(m?'Missão '+m.n+': '+m.short.name+' | ':r==='trilha'?'Trilha | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':r==='ola'?'Um oi pra começar | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
+  var holdXp=false;
+  if(m && kind==='win'){
+    var firstWin=!S.done[m.id]||!S.badges[m.id];
+    if(firstWin){
+      S.done[m.id]=true;S.badges[m.id]=true;save();syncProgress();
+      holdXp=true;
+    }
+    var fx=main.querySelector('.lesson--win .confetti');
+    if(fx&&!reduceMotion())fillConfetti(fx);
+  }
   if(m){
     if(kind==='quiz'){var k=S.ans[m.id];var box=document.querySelector('[data-quiz]');if(k&&box)showAnswer(box,m.id,k,false);}
     if(kind==='pack')checklistState();
     syncDock();
   }
-  updateProgress();
+  if(holdXp){
+    showBadgePop(m.id);
+    requestAnimationFrame(function(){flyXp((BADGES[m.id]&&BADGES[m.id].xp)||100)});
+  }else updateProgress();
   bindReveal();
   bindParallax();
   if(r==='bonus'&&!S.badges.bonus){
