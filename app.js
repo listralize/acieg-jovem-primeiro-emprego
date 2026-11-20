@@ -43,10 +43,53 @@ var BADGES={
   m7:{emoji:'🚀',name:'Olho no futuro',line:'O primeiro emprego é só o começo. E você já traçou o rumo.',xp:100},
   bonus:{emoji:'🛡️',name:'Meus direitos',line:'Conhecer seus direitos também é parte da jornada.',xp:50}
 };
+
+function badgeIcon(id){
+  switch(id){
+    case 'm1': /* primeiro passo: degrau + sol */
+      return '<rect x="26" y="62" width="24" height="10" rx="2" fill="#FFC83D"/><rect x="46" y="48" width="24" height="24" rx="2" fill="#F59527"/><circle cx="60" cy="34" r="11" fill="#FFC83D"/><path d="M60 18v-5M71 25l4-4M75 34h5M71 43l4 4" stroke="#FFC83D" stroke-width="2.4" stroke-linecap="round"/>';
+    case 'm2': /* responsa: relógio */
+      return '<circle cx="50" cy="50" r="22" fill="none" stroke="#FFC83D" stroke-width="3.6"/><circle cx="50" cy="50" r="3.2" fill="#F59527"/><path d="M50 50V32" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><path d="M50 50L64 50" stroke="#F59527" stroke-width="3.2" stroke-linecap="round"/><circle cx="50" cy="28" r="2" fill="#FFC83D"/><circle cx="72" cy="50" r="2" fill="#FFC83D"/><circle cx="50" cy="72" r="2" fill="#FFC83D"/><circle cx="28" cy="50" r="2" fill="#FFC83D"/>';
+    case 'm3': /* boa prosa: balões */
+      return '<rect x="22" y="30" width="40" height="28" rx="10" fill="#FFC83D"/><path d="M30 58l0 12 14-12z" fill="#FFC83D"/><rect x="40" y="40" width="36" height="24" rx="10" fill="#F59527"/><path d="M66 64l8 8V64z" fill="#F59527"/><circle cx="36" cy="44" r="2.2" fill="#031951"/><circle cx="44" cy="44" r="2.2" fill="#031951"/><circle cx="52" cy="44" r="2.2" fill="#031951"/>';
+    case 'm4': /* no time: três pessoas */
+      return '<circle cx="32" cy="38" r="8" fill="#FFC83D"/><circle cx="68" cy="38" r="8" fill="#FFC83D"/><circle cx="50" cy="32" r="9" fill="#F59527"/><path d="M14 72c0-12 8-18 18-18 6 0 10 3 14 6 4-3 8-6 14-6 10 0 18 6 18 18v2H14v-2z" fill="#FFC83D"/><path d="M32 72c0-12 8-18 18-18s18 6 18 18v2H32v-2z" fill="#F59527"/>';
+    case 'm5': /* levanta e segue: broto */
+      return '<path d="M50 74V46" stroke="#F59527" stroke-width="3.6" stroke-linecap="round"/><path d="M50 58c-14 0-20-14-16-26 10 5 16 14 16 26z" fill="#FFC83D"/><path d="M50 52c14-2 22-14 18-26-10 6-16 14-18 26z" fill="#F59527"/><circle cx="50" cy="76" r="5" fill="#FFC83D"/>';
+    case 'm6': /* mão na massa: raio */
+      return '<path d="M56 22L32 54h16l-8 26 32-36H56z" fill="#FFC83D" stroke="#F59527" stroke-width="2" stroke-linejoin="round"/>';
+    case 'm7': /* olho no futuro: foguete */
+      return '<path d="M50 18c14 16 14 40 0 58C36 58 36 34 50 18z" fill="#FFC83D"/><circle cx="50" cy="40" r="6.5" fill="#031951"/><path d="M38 54L26 72l16-8z" fill="#F59527"/><path d="M62 54l12 18-16-8z" fill="#F59527"/><path d="M50 76l-6 10 6-4 6 4z" fill="#F59527"/>';
+    case 'bonus':
+      return '<path d="M50 22l22 8v18c0 16-10 26-22 30C38 74 28 64 28 48V30z" fill="#FFC83D"/><path d="M50 30l14 5v14c0 11-7 18-14 21-7-3-14-10-14-21V35z" fill="#031951"/><path d="M44 50l5 5 11-12" fill="none" stroke="#FFC83D" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>';
+    default:
+      return '<circle cx="50" cy="50" r="12" fill="#FFC83D"/>';
+  }
+}
+function badgeSVG(id, off){
+  var uid='b'+id+(off?'off':'on');
+  var ring=off?'#4A628C':'url(#'+uid+')';
+  var disc=off?'#16306A':'#031951';
+  var stitch=off?'#6A80A8':'#FFC83D';
+  var icon=off?' opacity=".4"':'';
+  return '<svg class="patch__svg" viewBox="0 0 100 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><linearGradient id="'+uid+'" x1="18" y1="8" x2="82" y2="92" gradientUnits="userSpaceOnUse">'+
+    '<stop stop-color="#FFC83D"/><stop offset="1" stop-color="#F59527"/></linearGradient></defs>'+
+    '<circle cx="50" cy="50" r="46" fill="'+disc+'" stroke="'+ring+'" stroke-width="7"/>'+
+    '<circle cx="50" cy="50" r="37.5" fill="none" stroke="'+stitch+'" stroke-width="1.7" stroke-dasharray="2.6 2.8" stroke-linecap="round" opacity=".95"/>'+
+    '<g'+icon+'>'+badgeIcon(id)+'</g></svg>';
+}
+function badgeHTML(id, size, state){
+  size=size||'md';
+  state=state||'on';
+  return '<span class="patch patch--'+size+(state==='off'?' is-off':'')+(state==='unlock'?' is-unlock':'')+'" data-badge="'+id+'" aria-hidden="true">'+
+    badgeSVG(id, state==='off')+'<i class="patch__shine"></i></span>';
+}
+
 var SAY={
   idle:['Bora nessa?','Tô com você nessa jornada.','Um passo de cada vez.'],
   start:['Primeira missão: vamos com calma e confiança.','Respira. Você consegue.'],
-  yay:['Isso! Mandou bem.','Acertou em cheio. 🔥','Boa, pode ter orgulho.'],
+  yay:['Isso! Mandou bem.','Acertou em cheio.','Boa, pode ter orgulho.'],
   think:['Hmm, vamos pensar juntos.','Quase. Tenta de outro jeito.','Errou faz parte — olha a dica.'],
   win:['Missão cumprida!','Selou mais uma conquista.','Você tá on fire.']
 };
@@ -101,8 +144,7 @@ function acc(items,prefix,kicker){
 
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
 function buddyHTML(mood,msg,cls){
-  var face={idle:'😊',start:'🙌',yay:'🔥',think:'🤔',win:'😎'}[mood]||'😊';
-  return '<div class="buddy'+(cls?' '+cls:'')+'" data-mood="'+mood+'"><span class="buddy__face" aria-hidden="true">'+face+'</span><p class="buddy__say">'+esc(msg||pick(SAY[mood]||SAY.idle))+'</p></div>';
+  return '<div class="buddy'+(cls?' '+cls:'')+'" data-mood="'+mood+'"><span class="buddy__mark" aria-hidden="true">AJ</span><p class="buddy__say">'+esc(msg||pick(SAY[mood]||SAY.idle))+'</p></div>';
 }
 
 /* ---------- views ---------- */
@@ -231,11 +273,10 @@ function viewTrail(){
     var d=!!S.done[m.id], isNext=!!(next&&next.id===m.id), locked=!d&&!isNext&&!!next&&m.n>next.n;
     var b=BADGES[m.id]||{};
     return '<a class="trail__node'+(d?' is-done':'')+(isNext?' is-next':'')+(locked?' is-locked':'')+'" href="#/'+m.id+'">'+
-      '<span class="trail__num">'+(d?ICON.check:(locked?ICON.lock:String(m.n).padStart(2,'0')))+'</span>'+
+      '<span class="trail__num">'+(d?badgeHTML(m.id,'sm','on'):(locked?ICON.lock:String(m.n).padStart(2,'0')))+'</span>'+
       '<span class="trail__meta"><span class="trail__k">Missão '+String(m.n).padStart(2,'0')+(d?' · feita':(isNext?' · agora':(locked?' · bloqueada':'')))+'</span>'+
       '<span class="trail__t">'+esc(h.learn[i].name)+'</span>'+
-      '<span class="trail__d">'+esc(h.learn[i].desc)+'</span></span>'+
-      (d?'<span class="trail__badge" aria-hidden="true">'+b.emoji+'</span>':'')+'</a>';
+      '<span class="trail__d">'+esc(h.learn[i].desc)+'</span></span></a>';
   }).join('');
   var cta=all
     ?'<a class="btn btn--sun btn--block" href="#/final">Ver certificado'+ICON.arrow+'</a>'
@@ -327,7 +368,7 @@ function viewLesson(m, stepId){
     body='<section class="lesson lesson--win" data-kind="win"><div class="confetti" aria-hidden="true"></div><div class="lesson__stage">'+
       lessonArt(m,0)+
       '<div class="lesson__copy"><p class="kicker">'+kicker+' · concluída</p>'+
-      '<div class="badge-sticker" aria-hidden="true">'+(b.emoji||'')+'</div>'+
+      badgeHTML(m.id,'lg','unlock')+
       '<p class="lesson__xp">+'+(b.xp||100)+' XP</p>'+
       '<h1 tabindex="-1">Missão cumprida</h1>'+
       '<p class="lesson__hook">'+esc(b.name||'')+'</p>'+
@@ -359,7 +400,7 @@ function viewFinal(){
   var colors=['#FFC83D','#F59527','#2BC48A','#FFFFFF','#8FB0FF'], conf='';
   for(var i=0;i<46;i++){conf+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+colors[i%5]+';animation-delay:'+(Math.random()*1.4).toFixed(2)+'s;transform:rotate('+(i*37)+'deg)"></i>'}
   var n=doneCount();
-  var badges='<ul class="fin__badges" aria-label="Conquistas desbloqueadas">'+MODS.map(function(m){var b=BADGES[m.id], on=S.badges[m.id];return '<li'+(on?'':' style="opacity:.35"')+'><span class="badge-sticker badge-sticker--sm" aria-hidden="true">'+(on?b.emoji:'🔒')+'</span><span>'+esc(b.name)+'</span></li>'}).join('')+'</ul>';
+  var badges='<ul class="fin__badges" aria-label="Conquistas desbloqueadas">'+MODS.map(function(m){var b=BADGES[m.id], on=S.badges[m.id];return '<li class="'+(on?'is-on':'is-off')+'">'+badgeHTML(m.id,'md',on?'on':'off')+'<span>'+esc(b.name)+'</span></li>'}).join('')+'</ul>';
   return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><p class="kicker fin__k">Kit completo</p><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos · '+xpTotal()+' XP</span></div>'+
    '<h1 tabindex="-1">'+esc(f.title)+'</h1>'+badges+'<div class="fin__art">'+img('final','',true)+'</div>'+
    '<div class="fin__cert"><div class="fin__cert-box"><label for="certName">Seu nome no certificado (opcional)</label><input id="certName" type="text" maxlength="40" autocomplete="nickname" placeholder="Ex.: Ana Souza" value="'+esc(S.name||'')+'" data-cert-name><button type="button" class="btn btn--sun" data-cert>'+ICON.down+'Baixar meu certificado</button><p>Imagem pra guardar ou compartilhar. O certificado é gerado neste aparelho.</p></div></div>'+
@@ -428,7 +469,7 @@ function reactBuddy(mood,msg){
   main.querySelectorAll('.buddy').forEach(function(el){
     el.setAttribute('data-mood',mood);
     var face=el.querySelector('.buddy__face');
-    if(face)face.textContent={idle:'😊',start:'🙌',yay:'🔥',think:'🤔',win:'😎'}[mood]||'😊';
+    if(face){face.className='buddy__mark';face.textContent='AJ';}
     var say=el.querySelector('.buddy__say');
     if(say)say.textContent=msg||pick(SAY[mood]||SAY.idle);
   });
@@ -517,8 +558,9 @@ function fillConfetti(el){
 }
 function showBadgePop(id,go){
   pendingGo=go;
-  var b=BADGES[id]||{emoji:'⭐',name:'Conquista',line:'Mais um passo dado.',xp:0};
-  document.getElementById('badgePopIcon').textContent=b.emoji;
+  var b=BADGES[id]||{name:'Conquista',line:'Mais um passo dado.',xp:0};
+  var slot=document.getElementById('badgePopIcon');
+  if(slot)slot.innerHTML=badgeHTML(id,'lg','unlock');
   document.getElementById('badgePopTitle').textContent=b.name;
   document.getElementById('badgePopXp').textContent='+'+b.xp+' XP · total '+xpTotal();
   document.getElementById('badgePopLine').textContent=b.line;
@@ -555,12 +597,20 @@ function makeCertificate(done){
   var c=document.createElement('canvas');
   c.width=1080;c.height=1350;
   var ctx=c.getContext('2d');
+  var left=MODS.length+1, logoImg=null, imgs={};
+  function tick(){left--;if(left<=0){drawCert(ctx,c,logoImg,imgs);done(c)}}
   var logo=new Image();
-  logo.onload=function(){drawCert(ctx,c,logo);done(c)};
-  logo.onerror=function(){drawCert(ctx,c,null);done(c)};
+  logo.onload=function(){logoImg=logo;tick()};
+  logo.onerror=function(){tick()};
   logo.src='img/logo-aciegjovem.png';
+  MODS.forEach(function(m){
+    var im=new Image();
+    im.onload=function(){imgs[m.id]=im;tick()};
+    im.onerror=function(){tick()};
+    im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(badgeSVG(m.id,!S.badges[m.id]));
+  });
 }
-function drawCert(ctx,c,logo){
+function drawCert(ctx,c,logo,imgs){
   var w=c.width,h=c.height;
   ctx.fillStyle='#031951';ctx.fillRect(0,0,w,h);
   ctx.save();
@@ -595,27 +645,23 @@ function drawCert(ctx,c,logo){
   wrapCenter(ctx,'Meu Primeiro Emprego. E Agora?',w/2,nome?680:640,820,40);
   ctx.fillStyle='#FFC83D';ctx.font='700 24px "Plus Jakarta Sans",system-ui,sans-serif';
   ctx.fillText('7 missões concluídas  ·  '+xpTotal()+' XP',w/2,760);
-  // badges (número da missão + nome: confiável sem fonte de emoji)
   var ids=MODS.map(function(m){return m.id});
-  var gap=118, start=(w-(ids.length-1)*gap)/2;
+  var gap=128, start=(w-(ids.length-1)*gap)/2;
   ids.forEach(function(id,i){
-    var b=BADGES[id], x=start+i*gap, y=850, on=!!S.badges[id];
-    ctx.save();ctx.translate(x,y);ctx.rotate(-7*Math.PI/180);
-    ctx.fillStyle=on?'#fff':'#16306A';
-    roundRect(ctx,-42,-42,84,84,22);ctx.fill();
-    ctx.fillStyle=on?'#F59527':'#2A4A8A';
-    ctx.fillRect(-42,38,84,8);
-    ctx.fillStyle=on?'#031951':'#8AA0C8';
-    ctx.font='800 32px "Plus Jakarta Sans",system-ui,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(on?String(i+1):'–',0,-4);
+    var b=BADGES[id], x=start+i*gap, y=850, on=!!S.badges[id], im=imgs&&imgs[id];
+    ctx.save();
+    if(im) ctx.drawImage(im, x-46, y-46, 92, 92);
+    else {
+      ctx.beginPath();ctx.arc(x,y,46,0,Math.PI*2);
+      ctx.fillStyle=on?'#031951':'#16306A';ctx.fill();
+      ctx.lineWidth=6;ctx.strokeStyle=on?'#F59527':'#4A628C';ctx.stroke();
+    }
     ctx.restore();
     ctx.save();
     ctx.fillStyle=on?'#FFC83D':'rgba(255,255,255,.4)';
     ctx.font='700 13px "Plus Jakarta Sans",system-ui,sans-serif';
     ctx.textAlign='center';ctx.textBaseline='top';
-    var nm=b.name.toUpperCase();
-    ctx.fillText(nm, x, y+56);
+    ctx.fillText(b.name.toUpperCase(), x, y+52);
     ctx.restore();
   });
   var now=new Date();
@@ -742,6 +788,37 @@ function bindParallax(){
 }
 
 /* ---------- rotas ---------- */
+
+function paintTrailPath(){
+  var board=document.querySelector('.trail__board');
+  var svg=document.querySelector('.trail__snake');
+  if(!board||!svg)return;
+  var br=board.getBoundingClientRect();
+  var w=board.clientWidth, h=board.clientHeight;
+  if(w<10||h<10)return;
+  svg.setAttribute('viewBox','0 0 '+Math.round(w)+' '+Math.round(h));
+  svg.setAttribute('preserveAspectRatio','none');
+  svg.style.top='0';svg.style.bottom='auto';svg.style.left='0';svg.style.width='100%';svg.style.height=h+'px';
+  var nums=board.querySelectorAll('.trail__num');
+  var pts=[];
+  for(var i=0;i<nums.length;i++){
+    var r=nums[i].getBoundingClientRect();
+    pts.push({x:r.left+r.width/2-br.left, y:r.top+r.height/2-br.top});
+  }
+  if(pts.length<2)return;
+  var d='M'+pts[0].x.toFixed(1)+' '+pts[0].y.toFixed(1);
+  for(i=1;i<pts.length;i++){
+    var a=pts[i-1], b=pts[i], mid=(a.y+b.y)/2;
+    d+=' L'+a.x.toFixed(1)+' '+mid.toFixed(1)+' L'+b.x.toFixed(1)+' '+mid.toFixed(1)+' L'+b.x.toFixed(1)+' '+b.y.toFixed(1);
+  }
+  var path=svg.querySelector('path');
+  if(path)path.setAttribute('d',d);
+}
+var trailPathTO=0;
+window.addEventListener('resize',function(){
+  clearTimeout(trailPathTO);
+  trailPathTO=setTimeout(paintTrailPath,80);
+});
 function route(){
   if(badgePop&&!badgePop.hidden){clearTimeout(badgeTimer);badgePop.hidden=true;pendingGo=null}
   var raw=location.hash.replace(/^#\/?/,''), parts=raw.split('?'), path=parts[0]||'', anchor=parts[1];
@@ -779,6 +856,7 @@ function route(){
   }else updateProgress();
   bindReveal();
   bindParallax();
+  requestAnimationFrame(paintTrailPath);
   if(r==='bonus'&&!S.badges.bonus){
     S.badges.bonus=true;save();updateProgress();syncProgress();
     toast('Conquista desbloqueada: Meus direitos · +50 XP');
