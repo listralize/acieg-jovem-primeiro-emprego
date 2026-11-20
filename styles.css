@@ -384,7 +384,8 @@ h1[tabindex]:focus{outline:none}
 .mission b{color:var(--navy);font-weight:800}
 
 .reveal.is-in{animation:viewin .55s var(--ease) both}
-#main.view-in{animation:viewin .35s var(--ease) both}
+@keyframes viewin-fade{from{opacity:.2}to{opacity:1}}
+#main.view-in{animation:viewin-fade .35s var(--ease) both}
 
 .badge-pop{position:fixed;inset:0;z-index:90;background:rgba(3,25,81,.82);display:grid;place-items:center;padding:22px;backdrop-filter:blur(8px)}
 .badge-pop[hidden]{display:none}
@@ -432,4 +433,120 @@ h1[tabindex]:focus{outline:none}
   .badge-pop__card{animation:none!important}
   .opt.is-correct,.check input:checked+.check__box{animation:none!important}
   .btn:active,.opt:active{transform:none}
+}
+
+
+/* ========== JORNADA: hero poster, trilha, lição tela-a-tela ========== */
+body.is-focus .foot{display:none}
+.hero.hero--poster{min-height:calc(100dvh - 58px);display:flex;flex-direction:column;justify-content:flex-end;padding:0;background:var(--navy);color:#fff;overflow:hidden}
+.hero.hero--poster::before{background:none}
+.hero.hero--poster .hero__in{display:block;padding:28px 20px 0;max-width:1080px;margin:0 auto;width:100%}
+.hero--poster .hero__kicker{display:inline-block;margin:0 0 18px;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--sun)}
+.hero--poster h1{max-width:none;margin:0;font-size:clamp(56px,20vw,128px);line-height:.8;letter-spacing:-.07em;color:#fff}
+.hero--poster .hero__line{display:block;overflow:hidden}
+.hero--poster .hero__line span{display:block;animation:riseword .7s var(--pop) both}
+.hero--poster .hero__line:nth-child(2) span{animation-delay:.07s}
+.hero--poster .hero__line:nth-child(3) span{animation-delay:.14s}
+.hero--poster .hero__now{display:block;font-style:normal;color:var(--sun);margin-top:.04em;animation:slam .7s var(--pop) .24s both}
+@keyframes riseword{from{transform:translateY(110%)}to{transform:translateY(0)}}
+@keyframes slam{from{transform:translateY(30%);opacity:0}to{transform:none;opacity:1}}
+.hero--poster .hero__sub{font-size:18px;line-height:1.35;color:#E4ECFF;max-width:22ch;margin:22px 0 0;font-weight:500}
+.hero--poster .hero__tick{position:relative;overflow:hidden;height:40px;width:100%;max-width:100%;margin:28px 0 0;border-top:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16)}
+.hero--poster .hero__tick-track{position:absolute;left:0;top:0;height:40px;display:flex;align-items:center;white-space:nowrap;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--sun);animation:tick 36s linear infinite;will-change:transform}
+@keyframes tick{to{transform:translate3d(-50%,0,0)}}
+.hero--poster .hero__cta{padding:16px 20px calc(16px + env(safe-area-inset-bottom));width:100%;max-width:1080px;margin:0 auto;box-sizing:border-box}
+.hero--poster .hero__cta .btn--sun{width:100%;border-radius:8px;min-height:64px;font-size:17px;letter-spacing:.08em;text-transform:uppercase}
+@media(min-width:900px){
+  .hero.hero--poster{justify-content:center;padding:0}
+  .hero.hero--poster .hero__in{padding:48px 40px 0}
+  .hero--poster h1{font-size:clamp(80px,10vw,132px);max-width:14ch}
+  .hero--poster .hero__cta{padding:24px 40px 40px}
+  .hero--poster .hero__cta .btn--sun{width:auto;min-width:360px}
+}
+
+/* trilha */
+.trail{max-width:720px;margin:0 auto;padding:28px 20px 64px}
+.trail__intro{margin-bottom:28px}
+.trail__intro h2{font-size:clamp(36px,9vw,64px);letter-spacing:-.045em;line-height:.95;margin:8px 0 12px}
+.trail__lead{font-size:18px;color:var(--muted);max-width:28ch;margin:0}
+.trail__path{position:relative;display:grid;gap:0;margin:0 0 28px;padding:0}
+.trail__path::before{content:"";position:absolute;left:23px;top:18px;bottom:18px;width:2px;background:var(--line);pointer-events:none}
+.trail__node{display:grid;grid-template-columns:48px 1fr;gap:14px;align-items:center;text-decoration:none;color:var(--ink);padding:12px 0;position:relative;min-height:72px}
+.trail__num{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--navy);color:var(--sun);font-weight:800;font-size:13px;letter-spacing:.04em;position:relative;z-index:1;box-shadow:0 4px 0 #010A28}
+.trail__node.is-done .trail__num{background:var(--mint);color:#06311F;box-shadow:0 4px 0 var(--mint-d)}
+.trail__node.is-next .trail__num{background:var(--sun);color:var(--navy);box-shadow:0 4px 0 var(--sun-d)}
+.trail__meta{display:grid;gap:2px;min-width:0}
+.trail__k{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-ink)}
+.trail__node.is-done .trail__k{color:var(--mint-d)}
+.trail__node.is-next .trail__k{color:var(--orange-ink)}
+.trail__t{font-family:var(--display);font-weight:800;font-size:22px;color:var(--navy);letter-spacing:-.03em;line-height:1.1}
+.trail__d{color:var(--muted);margin:0;font-size:15px}
+.trail__node.is-next{background:var(--paper);border-radius:16px;padding:12px 12px 12px 0;margin-left:-8px;padding-left:8px;box-shadow:var(--sh);border:1.5px solid var(--line);border-left:0}
+.trail__cta{margin:22px 0 12px}
+.trail .bonus-call{margin-top:8px}
+.trail .lead__chip{margin-top:18px;text-align:center}
+@media(min-width:820px){
+  .trail{padding-top:48px}
+  .trail__path{grid-template-columns:1fr;max-width:560px}
+}
+
+/* lição */
+.lesson__top{position:sticky;top:58px;z-index:20;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+body.is-navy-lesson{background:var(--navy)}
+body.is-navy-lesson .lesson__top{background:var(--navy);border-bottom-color:rgba(255,255,255,.12)}
+body.is-navy-lesson .lesson__exit,body.is-navy-lesson .lesson__count{color:rgba(255,255,255,.8)}
+.lesson__exit{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);text-decoration:none;flex:none}
+.lesson__bar{flex:1;height:8px;border-radius:99px;background:rgba(3,25,81,.12);overflow:hidden}
+body.is-navy-lesson .lesson__bar{background:rgba(255,255,255,.14)}
+.lesson__bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--orange),var(--sun));border-radius:inherit;transition:width .35s var(--ease)}
+.lesson__count{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.lesson{min-height:calc(100dvh - 140px);display:flex;flex-direction:column;padding-bottom:8px}
+.lesson__stage{flex:1;width:100%;max-width:640px;margin:0 auto;padding:28px 20px 24px;box-sizing:border-box}
+.lesson h1{font-size:clamp(32px,9vw,56px);letter-spacing:-.04em;line-height:1;margin:0 0 16px;color:var(--navy)}
+.lesson--navy h1,.lesson--quiz h1,.lesson--win h1{color:#fff}
+.lesson .kicker{color:var(--orange-ink);margin-bottom:12px}
+.lesson--navy .kicker,.lesson--quiz .kicker,.lesson--win .kicker{color:var(--sun)}
+.lesson__hook{font-family:var(--display);font-weight:800;font-size:clamp(22px,6vw,34px);letter-spacing:-.03em;line-height:1.15;color:#fff;max-width:16ch;margin:0 0 12px}
+.lesson__sub,.lesson__d{font-size:18px;line-height:1.45;color:var(--ink);margin:0 0 18px;max-width:28ch}
+.lesson--navy .lesson__sub{color:#E4ECFF;max-width:22ch}
+.lesson__stamp{width:120px;height:120px;object-fit:cover;border-radius:24px;margin-top:28px;box-shadow:0 12px 0 -6px var(--orange)}
+.lesson__items{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+.lesson__items li{background:var(--paper);border:1.5px solid var(--line);border-left:6px solid var(--navy);border-radius:8px 16px 16px 8px;padding:12px 14px;font-weight:600;color:var(--navy)}
+.lesson__tip{margin:0;padding:12px 0 0;border-top:2px dashed var(--line);font-size:15px;color:var(--muted);max-width:36ch}
+.lesson--quiz,.lesson--navy,.lesson--win{background:var(--navy);color:#fff}
+.lesson--quiz .lesson__stage,.lesson--win .lesson__stage{padding-top:20px}
+.lesson--quiz .sim__situ{font-size:18px;line-height:1.4;color:#E4ECFF;margin:0 0 12px;max-width:30ch}
+.lesson--quiz .sim__q{color:#fff;font-size:clamp(28px,7vw,48px);margin:0 0 20px;max-width:16ch}
+.lesson--quiz .opts{gap:8px}
+.lesson--quiz .opt{box-shadow:0 5px 0 #1A1038}
+.lesson--quiz .fb{background:#fff}
+.lesson--win .lesson__xp{display:inline-block;background:var(--sun);color:var(--navy);font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:99px;margin:0 0 16px}
+.lesson--win .lesson__done{font-size:18px;color:#E4ECFF;max-width:24ch;margin:0}
+
+/* pack / write / plan */
+.pack{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pack .check{background:var(--paper);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+.lesson .panel{margin:0;box-shadow:none}
+.lesson .field textarea{min-height:70px}
+.lesson .saved{font-size:13px}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;align-items:center;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,var(--bg) 28%);pointer-events:none}
+.dock>*{pointer-events:auto}
+.dock .btn{flex:1;border-radius:8px;text-transform:uppercase;letter-spacing:.06em}
+.dock .btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.dock__back{flex:none;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);text-decoration:none;padding:12px 8px}
+body.is-navy-lesson .dock{background:linear-gradient(180deg,transparent,var(--navy) 32%)}
+body.is-navy-lesson .dock__back{color:#fff}
+#main{padding-bottom:0}
+body.is-focus #main{padding-bottom:120px}
+
+/* captura mais curta, sem mascote */
+.lead .buddy{display:none}
+.lead__hero{padding-bottom:8px}
+.lead__form{margin-top:-8px}
+.lead .dock{position:relative;background:none;padding:0 0 24px}
+
+@media (prefers-reduced-motion:reduce){
+  .hero--poster .hero__line span,.hero--poster .hero__now,.hero--poster .hero__tick-track{animation:none!important;opacity:1;transform:none}
 }

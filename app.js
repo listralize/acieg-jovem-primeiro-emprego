@@ -106,9 +106,8 @@ function buddyHTML(mood,msg,cls){
 
 /* ---------- views ---------- */
 function startHref(){
-  var first=(MODS.filter(function(m){return !S.done[m.id]})[0]||MODS[0]).id;
   if(!S.leadToken && !S.leadSkipped && doneCount()===0) return '#/ola';
-  return '#/'+first;
+  return '#/trilha';
 }
 function digits(s){return String(s||'').replace(/\D/g,'')}
 function maskWa(v){
@@ -143,10 +142,46 @@ function syncProgress(){
   var go=function(){fetch('/api/primeiro-emprego/leads/'+S.leadId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:body,keepalive:true}).catch(function(){})};
   syncTimer=setTimeout(go,400);
 }
+function sitText(m){
+  return (m.activity.situation||[]).map(function(b){
+    var d=document.createElement('div');d.innerHTML=b.html||b.text||'';return d.textContent.trim();
+  }).filter(Boolean).join(' ');
+}
+function lessonSteps(m){
+  var L=window.LESSONS&&window.LESSONS[m.id]||{ideas:[],teaches:[]};
+  var s=[{id:'hook',kind:'hook'}];
+  (L.ideas||[]).forEach(function(it,i){s.push({id:'idea'+(i+1),kind:'idea',item:it})});
+  (L.teaches||[]).forEach(function(it,i){s.push({id:'t'+(i+1),kind:'teach',item:it,n:i+1})});
+  if(m.checklist)s.push({id:'pack',kind:'pack'});
+  if(m.exercise)s.push({id:'write',kind:'write'});
+  if(m.plan)s.push({id:'plan',kind:'plan'});
+  s.push({id:'quiz',kind:'quiz'});
+  s.push({id:'win',kind:'win'});
+  return s;
+}
+function lessonPath(m,id){return '#/'+m.id+(id&&id!=='hook'?'/'+id:'')}
+function syncDock(){
+  var btn=document.querySelector('.dock [data-next]');
+  if(!btn)return;
+  var lesson=document.querySelector('.lesson');
+  var kind=lesson?lesson.getAttribute('data-kind'):'';
+  var off=false;
+  if(kind==='quiz'){
+    var q=document.querySelector('[data-quiz]');
+    off=!(q&&S.ans[q.dataset.quiz]);
+  }
+  if(kind==='pack'){
+    var box=document.querySelectorAll('[data-check]');
+    var n=0;box.forEach(function(c){if(c.checked)n++});
+    off=n!==box.length;
+  }
+  if(off)btn.setAttribute('aria-disabled','true'); else btn.removeAttribute('aria-disabled');
+}
+
 function viewOla(){
-  return '<section class="lead"><div class="lead__hero"><div class="wrap lead__in">'+buddyHTML('start','Bora se conhecer? É rápido e descontraído.')+
+  return '<section class="lead"><div class="lead__hero"><div class="wrap lead__in">'+
     '<p class="kicker">Ficha do kit</p><h1 tabindex="-1">Um oi pra <em>começar</em> a jornada</h1>'+
-    '<p class="lead__sub">Leva menos de 1 minuto. Assim a ACIEG Jovem acompanha você e pode entrar em contato.</p></div></div>'+
+    '<p class="lead__sub">Leva menos de 1 minuto. A ACIEG Jovem acompanha você e pode entrar em contato.</p></div></div>'+
     '<div class="wrap"><form class="lead__form" id="leadForm" novalidate>'+
     '<label for="ln">Como você se chama?</label><input class="lin" id="ln" name="nome" type="text" autocomplete="name" maxlength="80" required placeholder="Seu nome">'+
     '<label for="lw">WhatsApp</label><input class="lin" id="lw" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(62) 99999-9999">'+
@@ -162,68 +197,142 @@ function viewOla(){
     '</form></div></section>';
 }
 function viewHome(){
-  var h=C.home, first=MODS.filter(function(m){return !S.done[m.id]})[0]||MODS[0];
-  var started=doneCount()>0;
-  var w=h.welcome, lead=w[0], rest=w.slice(1,-1), ready=w[w.length-1];
-  var mood=doneCount()===7?'win':(started?'yay':'idle');
-  return '<section class="hero"><div class="floaties" aria-hidden="true"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i><i class="f5"></i></div><div class="hero__in"><div class="reveal">'+
-    '<div class="hero__top"><img src="img/logo-aciegjovem.png" alt="ACIEG Jovem" class="logo-img logo-img--hero" width="684" height="205"></div>'+
-    buddyHTML(mood, started?(doneCount()===7?'Você zerou o guia. Orgulho demais.':'Já são '+doneCount()+' de 7 missões. Bora continuar?'):pick(SAY.idle))+
-    '<h1>Meu Primeiro Emprego.<em>E Agora?</em></h1><p class="hero__sub">'+esc(h.subtitle)+'</p>'+
-    '<div class="hero__cta"><a class="btn btn--sun" href="'+startHref()+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost-on-dark" href="#modulos">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
-    '</div><div class="hero__art reveal">'+img('home','',true)+'</div></div></section>'+
-    '<div class="wrap"><section class="welcome reveal" aria-labelledby="bv"><span class="kicker" style="color:var(--coral-d)">'+ICON.star+' '+esc(h.welcomeTitle)+'</span>'+
-    '<h2 id="bv" class="welcome__lead" style="margin:10px 0 12px;font-size:26px">'+lead.html+'</h2>'+blocks(rest)+
-    '<div class="ready"><p>'+ready.html+'</p><a class="btn btn--blue" href="'+startHref()+'">'+esc(h.cta)+ICON.arrow+'</a></div>'+(S.leadToken?'':'<p class="lead__chip"><a href="#/ola">Quer que a ACIEG Jovem acompanhe você? É só um oi rápido.</a></p>')+'</section></div>'+
-    '<section class="section" id="modulos" aria-labelledby="aprender"><div class="wide"><h2 id="aprender">'+esc(h.learnTitle)+'</h2><div class="grid7">'+
-    MODS.map(function(m,i){var d=S.done[m.id];var b=BADGES[m.id];return '<a class="mcard'+(d?' is-done':'')+' reveal" href="#/'+m.id+'">'+(d?'<span class="mcard__badge" title="'+esc(b.name)+'">'+b.emoji+'</span>':'')+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Missão '+String(m.n).padStart(2,'0')+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
-    '<a class="bonus-call reveal" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir módulo bônus'+ICON.arrow+'</span></a></div></div></section>';
+  var h=C.home, started=doneCount()>0, all=doneCount()===7;
+  var href=all?'#/final':startHref();
+  var label=all?'Ver meu certificado':(started?'Continuar jornada':esc(h.cta));
+  var names=MODS.map(function(m,i){return 'Missão '+String(m.n).padStart(2,'0')+' · '+(h.learn[i]&&h.learn[i].name||m.short.name)}).concat(['Bônus · Direitos']);
+  var tick=esc(names.join('  ·  '));
+  return '<section class="hero hero--poster">'+
+    '<div class="hero__in">'+
+    '<p class="hero__kicker">Guia da ACIEG Jovem · 7 missões</p>'+
+    '<h1><span class="hero__line"><span>Meu</span></span><span class="hero__line"><span>Primeiro</span></span><span class="hero__line"><span>Emprego.</span></span><em class="hero__now">E Agora?</em></h1>'+
+    '<p class="hero__sub">'+esc(h.subtitle)+'</p>'+
+    '</div>'+
+    '<div class="hero__tick" aria-hidden="true"><div class="hero__tick-track"><span>'+tick+'  ·  '+tick+'  ·  </span></div></div>'+
+    '<div class="hero__cta"><a class="btn btn--sun" href="'+href+'">'+label+ICON.arrow+'</a></div>'+
+    '</section>';
+}
+function viewTrail(){
+  var h=C.home;
+  var next=MODS.filter(function(m){return !S.done[m.id]})[0];
+  var all=doneCount()===7;
+  var first=S.name?S.name.trim().split(' ')[0]:'';
+  var title=first?('Boa, '+first+'. Aqui está o mapa.'):'Conseguiu o emprego. Aqui está o mapa.';
+  var nodes=MODS.map(function(m,i){
+    var d=!!S.done[m.id], isNext=!!(next&&next.id===m.id);
+    return '<a class="trail__node'+(d?' is-done':'')+(isNext?' is-next':'')+'" href="#/'+m.id+'">'+
+      '<span class="trail__num">'+(d?ICON.check:String(m.n).padStart(2,'0'))+'</span>'+
+      '<span class="trail__meta"><span class="trail__k">Missão '+String(m.n).padStart(2,'0')+(d?' · concluída':(isNext?' · agora':''))+'</span>'+
+      '<span class="trail__t">'+esc(h.learn[i].name)+'</span>'+
+      '<span class="trail__d">'+esc(h.learn[i].desc)+'</span></span></a>';
+  }).join('');
+  var cta=all
+    ?'<a class="btn btn--sun btn--block" href="#/final">Ver certificado'+ICON.arrow+'</a>'
+    :'<a class="btn btn--sun btn--block" href="#/'+(next||MODS[0]).id+'">'+(doneCount()?'Continuar missão '+String(next.n).padStart(2,'0'):'Começar missão 01')+ICON.arrow+'</a>';
+  return '<section class="trail" id="modulos"><div class="trail__intro"><p class="kicker">Sua trilha</p><h2 id="aprender">'+esc(title)+'</h2><p class="trail__lead">7 missões curtas. Uma ideia por tela. Sem apostila.</p></div>'+
+    '<div class="trail__path">'+nodes+'</div>'+
+    '<a class="bonus-call" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir quando quiser'+ICON.arrow+'</span></a>'+
+    '<div class="trail__cta">'+cta+'</div>'+
+    (S.leadToken?'':'<p class="lead__chip"><a href="#/ola">Quer que a ACIEG Jovem acompanhe você? É um oi rápido.</a></p>')+
+    '</section>';
 }
 
 function activityHTML(m){
   var a=m.activity;
-  return '<section class="sim reveal" aria-labelledby="sim-'+m.id+'">'+buddyHTML('idle','Tô aqui pra essa situação. Lê com calma e escolhe.')+'<span class="kicker">'+ICON.bulb+' Atividade interativa</span>'+
-   '<div class="sim__situ"><p style="font-weight:800;color:#fff;margin:10px 0 4px">Situação:</p>'+blocks(a.situation)+'</div>'+
-   '<p class="sim__q" id="sim-'+m.id+'">'+a.question+'</p>'+
+  return '<section class="lesson lesson--quiz" data-kind="quiz"><div class="lesson__stage">'+
+   '<p class="kicker">Missão '+String(m.n).padStart(2,'0')+' · sua vez</p>'+
+   '<p class="sim__situ">'+esc(sitText(m))+'</p>'+
+   '<h1 class="sim__q" id="sim-'+m.id+'" tabindex="-1">'+a.question+'</h1>'+
    '<div class="opts" role="group" aria-labelledby="sim-'+m.id+'" data-quiz="'+m.id+'">'+a.options.map(function(o){
      return '<button type="button" class="opt" data-k="'+o.key+'" aria-pressed="false"><span class="opt__k">'+o.key+'</span><span class="opt__t">'+o.html+'</span><span class="opt__flag">'+ICON.check+'<span class="sr">Alternativa correta</span></span></button>'}).join('')+'</div>'+
-   '<div class="fb" aria-live="polite" tabindex="-1"></div></section>';
+   '<div class="fb" aria-live="polite" tabindex="-1"></div></div></section>';
 }
 
-function viewModule(m){
-  var i=MODS.indexOf(m), next=MODS[i+1], prev=MODS[i-1];
-  var h='<section class="mhero"><div class="mhero__in"><span class="mission">Missão <b>'+m.n+' / 7</b></span><span class="kicker">Módulo '+m.n+' de 7 · '+esc(m.short.name)+'</span>'+
-    '<div class="steps-dots" aria-hidden="true">'+MODS.map(function(x){return '<a href="#/'+x.id+'" tabindex="-1" class="'+(S.done[x.id]?'is-done':'')+'"'+(x===m?' aria-current="step"':'')+'></a>'}).join('')+'</div>'+
-    '<h1 tabindex="-1">'+esc(m.title)+'</h1>'+buddyHTML(S.done[m.id]?'win':'start', S.done[m.id]?('Você já desbloqueou “'+BADGES[m.id].name+'”.'):pick(SAY.start))+img(m.id,'',true)+'</div></section><div class="wrap">'+
-    '<section class="opening reveal" aria-label="Abertura">'+blocks(m.intro)+'</section>'+
-    '<h2 class="label-h">Conteúdo do módulo</h2><p class="hint">Toque em cada card para abrir.</p>'+acc(m.cards,m.id+'-card','Card')+
-    '<h2 class="label-h">Na prática</h2>'+activityHTML(m);
-  if(m.checklist){var c=m.checklist;
-    h+='<section class="panel reveal" style="margin-top:18px" aria-labelledby="ck"><span class="kicker">'+esc(c.kicker)+'</span><h3 id="ck">'+esc(c.title)+'</h3><ul class="checks">'+
-     c.items.map(function(t,j){return '<li><label class="check"><input type="checkbox" data-check="'+j+'"'+(S.checks[j]?' checked':'')+'><span class="check__box" aria-hidden="true">'+ICON.check+'</span><span>'+esc(t)+'</span></label></li>'}).join('')+
-     '</ul><p class="check-count" aria-live="polite"></p><div class="done-msg" role="status">'+ICON.star+'<span>'+esc(c.done)+'</span></div></section>';}
-  if(m.exercise){var e=m.exercise;
-    h+='<section class="panel reveal" style="margin-top:18px" aria-labelledby="ex"><span class="kicker">'+esc(e.kicker)+'</span><h3 id="ex">'+esc(e.title)+'</h3>'+
-     e.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-ex="'+j+'" rows="2">'+esc(S.ex[j]||'')+'</textarea></label>'}).join('')+
-     '<div class="row-btns"><button type="button" class="btn btn--blue" data-copy="ex">'+ICON.copy+'Copiar respostas</button></div><p class="saved">'+ICON.check+'Salvo automaticamente neste aparelho.</p></section>';}
-  if(m.plan){var p=m.plan;
-    h+='<section class="panel reveal" id="plano" style="margin-top:18px" aria-labelledby="pl"><span class="kicker">'+esc(p.kicker)+'</span><h3 id="pl">'+esc(p.title)+'</h3><p class="plan-lead">'+esc(p.lead)+'</p>'+
-     p.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-plan="'+j+'" rows="2">'+esc(S.plan[j]||'')+'</textarea></label>'}).join('')+
-     '<div class="row-btns"><button type="button" class="btn btn--sun" data-download="plan">'+ICON.down+esc(p.button)+'</button><button type="button" class="btn btn--ghost" data-copy="plan">'+ICON.copy+'Copiar plano</button></div><p class="saved">'+ICON.check+'Salvo só neste aparelho. Nada é enviado para servidores.</p></section>';}
-  h+='<section class="concl reveal" aria-label="Conclusão"><span class="kicker">'+ICON.star+' Conclusão</span><blockquote>'+esc(m.conclusion)+'</blockquote>'+
-    '<button type="button" class="btn btn--sun" data-complete="'+m.id+'">'+esc(m.button)+ICON.arrow+'</button></section>'+
-    '<nav class="pager" aria-label="Navegação entre módulos">'+(prev?'<a href="#/'+prev.id+'">'+ICON.back+'Módulo '+prev.n+'</a>':'<a href="#/">'+ICON.back+'Início</a>')+(next?'<a href="#/'+next.id+'">Módulo '+next.n+ICON.arrow+'</a>':'<a href="#/bonus">Bônus'+ICON.arrow+'</a>')+'</nav></div>';
-  return h;
+function viewLesson(m, stepId){
+  var steps=lessonSteps(m);
+  var i=steps.findIndex(function(s){return s.id===stepId});
+  if(i<0)i=0;
+  var st=steps[i];
+  var L=window.LESSONS&&window.LESSONS[m.id]||{};
+  var kicker='Missão '+String(m.n).padStart(2,'0')+' de 07';
+  var pct=Math.round(i/Math.max(1,steps.length-1)*100);
+  var top='<div class="lesson__top"><a class="lesson__exit" href="#/trilha">Trilha</a><div class="lesson__bar" role="progressbar" aria-valuemin="1" aria-valuemax="'+steps.length+'" aria-valuenow="'+(i+1)+'" aria-label="Progresso da missão"><span style="width:'+pct+'%"></span></div><span class="lesson__count">'+(i+1)+'/'+steps.length+'</span></div>';
+  var body='';
+  if(st.kind==='hook'){
+    body='<section class="lesson lesson--navy" data-kind="hook"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+'</p>'+
+      '<h1 tabindex="-1">'+esc(m.short.name)+'</h1>'+
+      '<p class="lesson__hook">'+esc(L.hook||m.short.desc)+'</p>'+
+      '<p class="lesson__sub">Uma ideia por tela. Leva poucos minutos.</p>'+
+      img(m.id,'lesson__stamp',true,true)+
+      '</div></section>';
+  }else if(st.kind==='idea'){
+    body='<section class="lesson" data-kind="idea"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · ideia</p>'+
+      '<h1 tabindex="-1">'+esc(st.item.t)+'</h1>'+
+      '<p class="lesson__d">'+esc(st.item.d)+'</p></div></section>';
+  }else if(st.kind==='teach'){
+    var items=(st.item.items||[]).map(function(t){return '<li>'+esc(t)+'</li>'}).join('');
+    body='<section class="lesson" data-kind="teach"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · '+st.n+' / 5</p>'+
+      '<h1 tabindex="-1">'+esc(st.item.t)+'</h1>'+
+      '<p class="lesson__d">'+esc(st.item.d)+'</p>'+
+      (items?'<ul class="lesson__items">'+items+'</ul>':'')+
+      (st.item.tip?'<p class="lesson__tip">'+esc(st.item.tip)+'</p>':'')+
+      '</div></section>';
+  }else if(st.kind==='pack'){
+    var c=m.checklist;
+    body='<section class="lesson" data-kind="pack"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · kit</p>'+
+      '<h1 tabindex="-1">Arrume a mochila</h1>'+
+      '<p class="lesson__d">Toque em cada compromisso para guardar no kit.</p>'+
+      '<ul class="pack checks">'+c.items.map(function(t,j){return '<li><label class="check"><input type="checkbox" data-check="'+j+'"'+(S.checks[j]?' checked':'')+'><span class="check__box" aria-hidden="true">'+ICON.check+'</span><span>'+esc(t)+'</span></label></li>'}).join('')+'</ul>'+
+      '<p class="check-count" aria-live="polite"></p><div class="done-msg" role="status">'+ICON.star+'<span>'+esc(c.done)+'</span></div></div></section>';
+  }else if(st.kind==='write'){
+    var e=m.exercise;
+    body='<section class="lesson" data-kind="write"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · sua vez</p>'+
+      '<h1 tabindex="-1">'+esc(e.title)+'</h1>'+
+      e.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-ex="'+j+'" rows="2">'+esc(S.ex[j]||'')+'</textarea></label>'}).join('')+
+      '<div class="row-btns"><button type="button" class="btn btn--blue" data-copy="ex">'+ICON.copy+'Copiar respostas</button></div><p class="saved">'+ICON.check+'Salvo neste aparelho.</p></div></section>';
+  }else if(st.kind==='plan'){
+    var p=m.plan;
+    body='<section class="lesson" data-kind="plan" id="plano"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · plano</p>'+
+      '<h1 tabindex="-1">'+esc(p.title)+'</h1>'+
+      '<p class="lesson__d">'+esc(p.lead)+'</p>'+
+      p.fields.map(function(f,j){return '<label class="field"><span class="field__l">'+esc(f)+'</span><textarea data-plan="'+j+'" rows="2">'+esc(S.plan[j]||'')+'</textarea></label>'}).join('')+
+      '<div class="row-btns"><button type="button" class="btn btn--sun" data-download="plan">'+ICON.down+esc(p.button)+'</button><button type="button" class="btn btn--ghost" data-copy="plan">'+ICON.copy+'Copiar plano</button></div><p class="saved">'+ICON.check+'Salvo só neste aparelho.</p></div></section>';
+  }else if(st.kind==='quiz'){
+    body=activityHTML(m);
+  }else if(st.kind==='win'){
+    var b=BADGES[m.id]||{};
+    body='<section class="lesson lesson--win" data-kind="win"><div class="lesson__stage">'+
+      '<p class="kicker">'+kicker+' · concluída</p>'+
+      '<p class="lesson__xp">+'+(b.xp||100)+' XP</p>'+
+      '<h1 tabindex="-1">Missão cumprida</h1>'+
+      '<p class="lesson__hook">'+esc(b.name||'')+'</p>'+
+      '<p class="lesson__done">'+esc(m.conclusion)+'</p></div></section>';
+  }
+  var next=steps[i+1], prev=steps[i-1];
+  var label=st.kind==='hook'?'Começar':(st.kind==='win'?((m.n===7)?'Ir para o certificado':'Ir para a missão '+String(m.n+1).padStart(2,'0')):'Próximo');
+  var dock;
+  if(st.kind==='win'){
+    dock='<div class="dock"><a class="dock__back" href="#/trilha">Trilha</a><button type="button" class="btn btn--sun" data-complete="'+m.id+'">'+label+ICON.arrow+'</button></div>';
+  }else{
+    dock='<div class="dock"><a class="dock__back" href="'+(prev?lessonPath(m,prev.id):'#/trilha')+'">'+(prev?'Voltar':'Trilha')+'</a><a class="btn btn--sun" data-next href="'+(next?lessonPath(m,next.id):lessonPath(m,'win'))+'">'+label+ICON.arrow+'</a></div>';
+  }
+  return top+body+dock;
 }
 
 function viewBonus(){
   var b=C.bonus;
-  return '<section class="mhero mhero--bonus"><div class="mhero__in"><span class="kicker">'+ICON.shield+' '+esc(b.label)+'</span><h1 tabindex="-1">'+esc(b.title)+'</h1>'+buddyHTML('idle','Seus direitos também entram no jogo.')+img('bonus','',true)+'</div></section><div class="wrap">'+
-   (CFG.bonusReviewPending?'<!-- REVISÃO HUMANA PENDENTE: para tirar o selo, mude bonusReviewPending para false em config.js --><p class="review">'+ICON.alert+'<span><strong>Conteúdo em revisão.</strong> Este módulo está passando por revisão antes da publicação definitiva.</span></p>':'')+
-   '<section class="opening reveal" aria-label="Abertura">'+blocks(b.intro)+'</section><h2 class="label-h">Perguntas</h2><p class="hint">Toque em cada pergunta para ver a resposta.</p><div class="faq">'+acc(b.faq,'faq','Pergunta')+'</div>'+
-   '<a class="btn btn--blue btn--block mte" href="'+esc(b.linkUrl)+'" target="_blank" rel="noopener">'+esc(b.linkLabel)+ICON.ext+'<span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"> (abre em nova aba)</span></a>'+
-   '<section class="concl concl--bonus reveal" aria-label="Mensagem final do módulo"><span class="kicker" style="color:var(--mint)">'+ICON.star+' Mensagem final</span><blockquote>'+esc(b.conclusion)+'</blockquote><a class="btn btn--sun" href="#/">'+ICON.back+'Voltar ao início</a></section>'+
-   '<nav class="pager"><a href="#/m7">'+ICON.back+'Módulo 7</a><a href="#/final">Página final'+ICON.arrow+'</a></nav></div>';
+  return '<section class="trail" id="bonus"><div class="trail__intro"><p class="kicker">'+ICON.shield+' '+esc(b.label)+'</p><h2 tabindex="-1">'+esc(b.title)+'</h2></div>'+
+   (CFG.bonusReviewPending?'<p class="review">'+ICON.alert+'<span><strong>Conteúdo em revisão.</strong> Este módulo está passando por revisão antes da publicação definitiva.</span></p>':'')+
+   '<section class="opening" aria-label="Abertura">'+blocks(b.intro)+'</section>'+
+   '<div class="faq">'+acc(b.faq,'faq','Pergunta')+'</div>'+
+   '<a class="btn btn--blue btn--block mte" href="'+esc(b.linkUrl)+'" target="_blank" rel="noopener">'+esc(b.linkLabel)+ICON.ext+'<span class="sr-only"> (abre em nova aba)</span></a>'+
+   '<nav class="pager"><a href="#/trilha">'+ICON.back+'Trilha</a><a href="#/final">Página final'+ICON.arrow+'</a></nav></section>';
 }
 
 function viewFinal(){
@@ -254,9 +363,11 @@ function updateProgress(){
     xpEl.textContent=xp;
     if(xp>prev){var chip=xpEl.parentNode;chip.classList.remove('is-bump');void chip.offsetWidth;chip.classList.add('is-bump')}
   }
-  var route=location.hash.replace('#/','')||'home';
-  document.querySelector('.drawer__list').innerHTML='<li><a href="#/"'+(route==='home'||route===''?' aria-current="page"':'')+'><span class="dnum">'+ICON.map+'</span><span><span class="dname">Início</span></span></a></li>'+
-   MODS.map(function(m){return '<li class="'+(S.done[m.id]?'is-done':'')+'"><a href="#/'+m.id+'"'+(route===m.id?' aria-current="page"':'')+'><span class="dnum">'+(S.done[m.id]?ICON.check:m.n)+'</span><span><span class="dlabel">Módulo '+m.n+(S.done[m.id]?' · concluído':'')+'</span><span class="dname">'+esc(m.short.name)+'</span></span></a></li>'}).join('')+
+  var route=(location.hash.replace(/^#\/?/,'').split('?')[0]||'home');
+  var top=route.split('/')[0]||'home';
+  document.querySelector('.drawer__list').innerHTML='<li><a href="#/"'+(top==='home'||top===''?' aria-current="page"':'')+'><span class="dnum">'+ICON.map+'</span><span><span class="dname">Início</span></span></a></li>'+
+   '<li><a href="#/trilha"'+(top==='trilha'?' aria-current="page"':'')+'><span class="dnum">'+ICON.map+'</span><span><span class="dname">Trilha</span></span></a></li>'+
+   MODS.map(function(m){return '<li class="'+(S.done[m.id]?'is-done':'')+'"><a href="#/'+m.id+'"'+(top===m.id?' aria-current="page"':'')+'><span class="dnum">'+(S.done[m.id]?ICON.check:m.n)+'</span><span><span class="dlabel">Missão '+m.n+(S.done[m.id]?' · concluída':'')+'</span><span class="dname">'+esc(m.short.name)+'</span></span></a></li>'}).join('')+
    '<li class="drawer__sep" aria-hidden="true"></li><li><a href="#/bonus"'+(route==='bonus'?' aria-current="page"':'')+'><span class="dnum" style="background:var(--mint-l);color:var(--mint-d)">'+ICON.shield+'</span><span><span class="dlabel">Bônus</span><span class="dname">'+esc(C.bonus.title)+'</span></span></a></li>'+
    '<li><a href="#/final"'+(route==='final'?' aria-current="page"':'')+'><span class="dnum" style="background:var(--sun-l);color:#9A6B00">'+ICON.star+'</span><span><span class="dname">Página final</span></span></a></li>';
 }
@@ -310,12 +421,12 @@ function showAnswer(box,mid,key,animate){
   var fb=box.parentNode.querySelector('.fb');
   fb.className='fb is-on '+(ok?'fb--ok':'fb--ko');
   fb.innerHTML='<div class="fb__h"><span class="fb__ic" aria-hidden="true">'+(ok?ICON.check:ICON.bulb)+'</span>'+(ok?'Você acertou!':'Vamos pensar juntos')+'</div><p>'+(ok?a.ok:a.ko)+'</p>'+
-    '<p style="font-size:14px;color:var(--muted)">Alternativa correta: <strong>'+a.correct+'</strong>.</p><div class="row-btns"><button type="button" class="btn btn--ghost" data-retry="'+mid+'">'+ICON.retry+'Tentar novamente</button></div>';
+    '<div class="row-btns"><button type="button" class="btn btn--ghost" data-retry="'+mid+'">'+ICON.retry+'Tentar de novo</button></div>';
   if(animate){
     fb.focus({preventScroll:true});
-    reactBuddy(ok?'yay':'think', pick(ok?SAY.yay:SAY.think));
     beep(ok?'ok':'ko');
   }
+  syncDock();
 }
 function resetQuiz(mid){
   var box=document.querySelector('[data-quiz="'+mid+'"]');
@@ -323,7 +434,7 @@ function resetQuiz(mid){
   box.querySelectorAll('.opt').forEach(function(b){b.classList.remove('is-correct','is-wrong');b.setAttribute('aria-pressed','false');b.removeAttribute('aria-disabled')});
   var fb=box.parentNode.querySelector('.fb');fb.className='fb';fb.innerHTML='';
   delete S.ans[mid];save();box.querySelector('.opt').focus();
-  reactBuddy('idle','Bora tentar de novo.');
+  syncDock();
 }
 
 /* ---------- plano / copiar / baixar ---------- */
@@ -348,9 +459,9 @@ function hasPlan(){return S.plan.some(function(v){return v&&v.trim()})}
 function checklistState(){
   var box=document.querySelectorAll('[data-check]');if(!box.length)return;
   var n=0;box.forEach(function(c){if(c.checked)n++});
-  var cnt=document.querySelector('.check-count');cnt.textContent=n+' de '+box.length+' marcados';
-  document.querySelector('.done-msg').classList.toggle('is-on',n===box.length);
-  if(n===box.length)reactBuddy('yay','Checklist completo. Organizado!');
+  var cnt=document.querySelector('.check-count');if(cnt)cnt.textContent=n+' de '+box.length+' no kit';
+  var dm=document.querySelector('.done-msg');if(dm)dm.classList.toggle('is-on',n===box.length);
+  syncDock();
 }
 
 /* ---------- conquistas + certificado ---------- */
@@ -497,6 +608,7 @@ function downloadCanvas(c,name){
 /* ---------- eventos ---------- */
 main.addEventListener('click',function(e){
   var t;
+  if((t=e.target.closest('[data-next]'))){if(t.getAttribute('aria-disabled')==='true'){e.preventDefault();return}return}
   if((t=e.target.closest('.acard__btn'))){var o=t.getAttribute('aria-expanded')!=='true';t.setAttribute('aria-expanded',o);document.getElementById(t.getAttribute('aria-controls')).hidden=!o;t.closest('.acard').classList.toggle('is-open',o);return}
   if((t=e.target.closest('.opt'))){var box=t.closest('[data-quiz]');if(box.classList.contains('is-answered'))return;S.ans[box.dataset.quiz]=t.dataset.k;save();showAnswer(box,box.dataset.quiz,t.dataset.k,true);return}
   if((t=e.target.closest('[data-retry]'))){resetQuiz(t.dataset.retry);return}
@@ -504,7 +616,7 @@ main.addEventListener('click',function(e){
   if((t=e.target.closest('[data-download]'))){
     if(t.hasAttribute('data-from-final')&&!hasPlan()){toast('Seu plano ainda está vazio. Preencha no Módulo 7.');location.hash='#/m7?plano';return}
     download();return}
-  if((t=e.target.closest('[data-lead-skip]'))){S.leadSkipped=true;save();location.hash='#/m1';return}
+  if((t=e.target.closest('[data-lead-skip]'))){S.leadSkipped=true;save();location.hash='#/trilha';return}
   if((t=e.target.closest('[data-complete]'))){
     var id=t.dataset.complete;
     var first=!S.done[id]||!S.badges[id];
@@ -514,7 +626,7 @@ main.addEventListener('click',function(e){
     else go();
     return;
   }
-  if((t=e.target.closest('[data-revisit]'))){e.preventDefault();location.hash='#/?modulos';return}
+  if((t=e.target.closest('[data-revisit]'))){e.preventDefault();location.hash='#/trilha';return}
   if((t=e.target.closest('[data-cert]'))){makeCertificate(function(c){downloadCanvas(c,'certificado-primeiro-emprego.png')});return}
 });
 main.addEventListener('change',function(e){var c=e.target.closest('[data-check]');if(c){S.checks[+c.dataset.check]=c.checked;save();checklistState()}});
@@ -550,7 +662,7 @@ main.addEventListener('submit',function(e){
       if(!res.j||!res.j.ok){throw new Error((res.j&&res.j.error)||'Não rolou agora. Tenta de novo.');}
       if(res.j.token&&res.j.id){S.leadId=String(res.j.id);S.leadToken=res.j.token;S.name=nome;save();syncProgress();}
       toast('Oba, '+nome.split(' ')[0]+'! Bora começar.');
-      location.hash='#/m1';
+      location.hash='#/trilha';
     })
     .catch(function(err2){err.textContent=err2.message||'Não rolou agora. Tenta de novo.';btn.disabled=false;btn.innerHTML='Começar a jornada'+ICON.arrow;});
 });
@@ -590,14 +702,25 @@ function bindParallax(){
 /* ---------- rotas ---------- */
 function route(){
   if(badgePop&&!badgePop.hidden){clearTimeout(badgeTimer);badgePop.hidden=true;pendingGo=null}
-  var raw=location.hash.replace(/^#\/?/,''), parts=raw.split('?'), r=parts[0]||'home', anchor=parts[1];
-  if(raw==='modulos'){r='home';anchor='modulos'}
+  var raw=location.hash.replace(/^#\/?/,''), parts=raw.split('?'), path=parts[0]||'', anchor=parts[1];
+  if(raw==='modulos'){path='trilha';anchor='modulos'}
+  var segs=path.split('/').filter(Boolean);
+  var r=segs[0]||'home';
+  var step=segs[1];
   var m=MODS.filter(function(x){return x.id===r})[0];
-  var html=m?viewModule(m):r==='bonus'?viewBonus():r==='final'?viewFinal():r==='ola'?viewOla():viewHome();
+  var html=m?viewLesson(m,step):r==='trilha'||r==='modulos'?viewTrail():r==='bonus'?viewBonus():r==='final'?viewFinal():r==='ola'?viewOla():viewHome();
   main.innerHTML=html;
+  var lesson=main.querySelector('.lesson');
+  var kind=lesson?lesson.getAttribute('data-kind'):'';
+  document.body.classList.toggle('is-focus', r==='ola'||r==='home'||!!m);
+  document.body.classList.toggle('is-navy-lesson', !!m && (kind==='hook'||kind==='quiz'||kind==='win'));
   main.classList.remove('view-in');void main.offsetWidth;main.classList.add('view-in');
-  document.title=(m?'Módulo '+m.n+': '+m.short.name+' | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':r==='ola'?'Um oi pra começar | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
-  if(m){var k=S.ans[m.id];if(k)showAnswer(document.querySelector('[data-quiz]'),m.id,k,false);checklistState()}
+  document.title=(m?'Missão '+m.n+': '+m.short.name+' | ':r==='trilha'?'Trilha | ':r==='bonus'?'Bônus | ':r==='final'?'Jornada concluída | ':r==='ola'?'Um oi pra começar | ':'')+'Meu Primeiro Emprego. E Agora? | ACIEG Jovem';
+  if(m){
+    if(kind==='quiz'){var k=S.ans[m.id];var box=document.querySelector('[data-quiz]');if(k&&box)showAnswer(box,m.id,k,false);}
+    if(kind==='pack')checklistState();
+    syncDock();
+  }
   updateProgress();
   bindReveal();
   bindParallax();
@@ -610,6 +733,7 @@ function route(){
   else{window.scrollTo(0,0);var h=main.querySelector('h1[tabindex]');if(h&&route.ready)h.focus({preventScroll:true})}
   route.ready=true;
 }
+
 window.addEventListener('hashchange',route);
 route();
 })();
