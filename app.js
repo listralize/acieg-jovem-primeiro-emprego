@@ -66,8 +66,10 @@ function badgeIcon(id){
       return '<circle cx="50" cy="50" r="12" fill="#FFC83D"/>';
   }
 }
+var badgeUid=0;
 function badgeSVG(id, off){
-  var uid='b'+id+(off?'off':'on');
+  badgeUid+=1;
+  var uid='b'+id+(off?'off':'on')+badgeUid;
   var ring=off?'#4A628C':'url(#'+uid+')';
   var disc=off?'#16306A':'#031951';
   var stitch=off?'#6A80A8':'#FFC83D';
@@ -571,7 +573,9 @@ function showBadgePop(id,go){
   if(btn)btn.focus();
   beep('badge');
   clearTimeout(badgeTimer);
-  badgeTimer=setTimeout(closeBadgePop, reduceMotion()?400:2200);
+  // Com movimento, fecha sozinho depois de um instante. Sem movimento, fica
+  // até o jovem tocar em Seguir (400ms era curto demais para ler).
+  if(!reduceMotion()) badgeTimer=setTimeout(closeBadgePop, 2200);
 }
 function closeBadgePop(){
   if(badgePop.hidden)return;
