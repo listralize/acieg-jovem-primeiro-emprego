@@ -71,7 +71,7 @@ function xpTotal(){var n=doneCount()*100;if(S.badges&&S.badges.bonus)n+=50;retur
 function reduceMotion(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches}
 
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function img(k,cls,eager,small){var sz=small?'(min-width:980px) 340px, (min-width:620px) 50vw, 100vw':'(min-width:1080px) 1040px, 100vw';return '<img class="'+(cls||'')+'" src="img/'+k+'-640.webp" srcset="img/'+k+'-640.webp 640w, img/'+k+'.webp 1280w" sizes="'+sz+'" width="1280" height="720" alt="'+esc(ALT[k])+'"'+(eager?' fetchpriority="high"':' loading="lazy"')+' decoding="async">'}
+function img(k,cls,eager,small){var sz=small?'(min-width:980px) 340px, (min-width:620px) 50vw, 640px':'(min-width:1080px) 1040px, (min-width:700px) 90vw, 640px';return '<img class="'+(cls||'')+'" src="img/'+k+'-640.webp" srcset="img/'+k+'-640.webp 640w, img/'+k+'.webp 1280w" sizes="'+sz+'" width="1280" height="720" alt="'+esc(ALT[k])+'"'+(eager?' fetchpriority="high"':' loading="lazy"')+' decoding="async">'}
 function strip(h){var d=document.createElement('div');d.innerHTML=h;return d.textContent}
 
 function blocks(arr){return arr.map(function(b){
@@ -145,7 +145,7 @@ function syncProgress(){
 }
 function viewOla(){
   return '<section class="lead"><div class="lead__hero"><div class="wrap lead__in">'+buddyHTML('start','Bora se conhecer? É rápido e descontraído.')+
-    '<p class="kicker">Antes de começar</p><h1 tabindex="-1">Um oi pra <em>começar</em> a jornada</h1>'+
+    '<p class="kicker">Ficha do kit</p><h1 tabindex="-1">Um oi pra <em>começar</em> a jornada</h1>'+
     '<p class="lead__sub">Leva menos de 1 minuto. Assim a ACIEG Jovem acompanha você e pode entrar em contato.</p></div></div>'+
     '<div class="wrap"><form class="lead__form" id="leadForm" novalidate>'+
     '<label for="ln">Como você se chama?</label><input class="lin" id="ln" name="nome" type="text" autocomplete="name" maxlength="80" required placeholder="Seu nome">'+
@@ -170,13 +170,13 @@ function viewHome(){
     '<div class="hero__top"><img src="img/logo-aciegjovem.png" alt="ACIEG Jovem" class="logo-img logo-img--hero" width="684" height="205"></div>'+
     buddyHTML(mood, started?(doneCount()===7?'Você zerou o guia. Orgulho demais.':'Já são '+doneCount()+' de 7 missões. Bora continuar?'):pick(SAY.idle))+
     '<h1>Meu Primeiro Emprego.<em>E Agora?</em></h1><p class="hero__sub">'+esc(h.subtitle)+'</p>'+
-    '<div class="hero__cta"><a class="btn btn--sun" href="'+startHref()+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost" href="#modulos" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.4)">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
+    '<div class="hero__cta"><a class="btn btn--sun" href="'+startHref()+'">'+(started?'Continuar jornada':esc(h.cta))+ICON.arrow+'</a>'+(started?'<a class="btn btn--ghost-on-dark" href="#modulos">'+ICON.map+'Ver módulos</a>':'')+'</div>'+
     '</div><div class="hero__art reveal">'+img('home','',true)+'</div></div></section>'+
     '<div class="wrap"><section class="welcome reveal" aria-labelledby="bv"><span class="kicker" style="color:var(--coral-d)">'+ICON.star+' '+esc(h.welcomeTitle)+'</span>'+
     '<h2 id="bv" class="welcome__lead" style="margin:10px 0 12px;font-size:26px">'+lead.html+'</h2>'+blocks(rest)+
     '<div class="ready"><p>'+ready.html+'</p><a class="btn btn--blue" href="'+startHref()+'">'+esc(h.cta)+ICON.arrow+'</a></div>'+(S.leadToken?'':'<p class="lead__chip"><a href="#/ola">Quer que a ACIEG Jovem acompanhe você? É só um oi rápido.</a></p>')+'</section></div>'+
     '<section class="section" id="modulos" aria-labelledby="aprender"><div class="wide"><h2 id="aprender">'+esc(h.learnTitle)+'</h2><div class="grid7">'+
-    MODS.map(function(m,i){var d=S.done[m.id];var b=BADGES[m.id];return '<a class="mcard'+(d?' is-done':'')+' reveal" href="#/'+m.id+'">'+(d?'<span class="mcard__badge" title="'+esc(b.name)+'">'+b.emoji+'</span>':'')+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Módulo '+m.n+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
+    MODS.map(function(m,i){var d=S.done[m.id];var b=BADGES[m.id];return '<a class="mcard'+(d?' is-done':'')+' reveal" href="#/'+m.id+'">'+(d?'<span class="mcard__badge" title="'+esc(b.name)+'">'+b.emoji+'</span>':'')+img(m.id,'',false,true)+'<div class="mcard__b"><span class="mcard__n">Missão '+String(m.n).padStart(2,'0')+'</span><span class="mcard__t">'+esc(h.learn[i].name)+'</span><p class="mcard__d">'+esc(h.learn[i].desc)+'</p><span class="mcard__s">'+(d?ICON.check+'Concluído':ICON.arrow+'Começar')+'</span></div></a>'}).join('')+
     '<a class="bonus-call reveal" href="#/bonus"><span class="tag">Bônus</span><b>'+esc(h.bonusCall.replace(/^Bônus:\s*/,''))+'</b><span class="go">'+ICON.shield+'Abrir módulo bônus'+ICON.arrow+'</span></a></div></div></section>';
 }
 
@@ -232,7 +232,7 @@ function viewFinal(){
   for(var i=0;i<46;i++){conf+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:'+colors[i%5]+';animation-delay:'+(Math.random()*1.4).toFixed(2)+'s;transform:rotate('+(i*37)+'deg)"></i>'}
   var n=doneCount();
   var badges='<ul class="fin__badges" aria-label="Conquistas desbloqueadas">'+MODS.map(function(m){var b=BADGES[m.id], on=S.badges[m.id];return '<li'+(on?'':' style="opacity:.35"')+'><span class="badge-sticker badge-sticker--sm" aria-hidden="true">'+(on?b.emoji:'🔒')+'</span><span>'+esc(b.name)+'</span></li>'}).join('')+'</ul>';
-  return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><p class="kicker fin__k">Você zerou o guia</p><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos · '+xpTotal()+' XP</span></div>'+
+  return '<section class="fin"><div class="confetti" aria-hidden="true">'+conf+'</div><p class="kicker fin__k">Kit completo</p><div class="badge-done"><span>'+ICON.check+n+' de 7 módulos concluídos · '+xpTotal()+' XP</span></div>'+
    '<h1 tabindex="-1">'+esc(f.title)+'</h1>'+badges+'<div class="fin__art">'+img('final','',true)+'</div>'+
    '<div class="fin__cert"><div class="fin__cert-box"><label for="certName">Seu nome no certificado (opcional)</label><input id="certName" type="text" maxlength="40" autocomplete="nickname" placeholder="Ex.: Ana Souza" value="'+esc(S.name||'')+'" data-cert-name><button type="button" class="btn btn--sun" data-cert>'+ICON.down+'Baixar meu certificado</button><p>Imagem pra guardar ou compartilhar. O certificado é gerado neste aparelho.</p></div></div>'+
    '<div style="padding:0 20px"><div class="fin__card">'+blocks(f.blocks)+'<div class="fin__btns">'+
@@ -410,17 +410,27 @@ function makeCertificate(done){
 function drawCert(ctx,c,logo){
   var w=c.width,h=c.height;
   ctx.fillStyle='#031951';ctx.fillRect(0,0,w,h);
-  // formas
   ctx.save();
   ctx.fillStyle='#F59527';ctx.beginPath();ctx.arc(-40,160,180,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#FFC83D';roundRect(ctx,w-200,-40,260,260,40);ctx.fill();
   ctx.fillStyle='#1747D1';ctx.beginPath();ctx.arc(w-80,h-80,200,0,Math.PI*2);ctx.fill();
   ctx.restore();
-  // moldura
+  ctx.save();
+  ctx.globalAlpha=.07;ctx.strokeStyle='#fff';ctx.lineWidth=10;
+  for(var s=-h;s<w+h;s+=28){ctx.beginPath();ctx.moveTo(s,0);ctx.lineTo(s+h,h);ctx.stroke()}
+  ctx.restore();
   ctx.strokeStyle='rgba(255,200,61,.55)';ctx.lineWidth=8;ctx.strokeRect(48,48,w-96,h-96);
   ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;ctx.strokeRect(64,64,w-128,h-128);
   if(logo){var lw=420,lh=lw*(205/684);ctx.drawImage(logo,(w-lw)/2,110,lw,lh)}
-  ctx.fillStyle='#FFC83D';ctx.font='700 28px "Plus Jakarta Sans",system-ui,sans-serif';ctx.textAlign='center';
+  ctx.save();ctx.translate(w-150,210);ctx.rotate(-18*Math.PI/180);
+  ctx.fillStyle='#031951';ctx.beginPath();ctx.arc(0,0,66,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#F59527';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,66,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='#FFC83D';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,54,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#FFC83D';ctx.font='800 13px "Plus Jakarta Sans",system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('KIT',0,-8);ctx.fillText('COMPLETO',0,10);
+  ctx.restore();
+  ctx.fillStyle='#FFC83D';ctx.font='800 26px "Plus Jakarta Sans",system-ui,sans-serif';ctx.textAlign='center';
   ctx.fillText('CERTIFICADO',w/2,logo?340:180);
   ctx.fillStyle='#fff';ctx.font='800 86px "Bricolage Grotesque",system-ui,sans-serif';
   ctx.fillText('Você zerou',w/2,460);
